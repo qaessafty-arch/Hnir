@@ -8,7 +8,7 @@ The application, database and load generator all ran **on the same machine**, so
 | Suite | Command | Result |
 |---|---|---|
 | Unit: grading engine | `npm test --prefix server` (`test/grading.test.js`) | **8 / 8 pass** (incl. TOTP RFC 6238 vectors) |
-| Integration: API + security against real PostgreSQL | `npm test --prefix server` (`test/api.test.js`) | **33 / 33 pass** |
+| Integration: API + security against real PostgreSQL | `npm test --prefix server` (`test/api.test.js`) | **40 / 40 pass** |
 | Browser end-to-end (roles × languages × viewports) | `node e2e/smoke.js` | **Pass**: 0 console errors, 0 CSP violations, 0 5xx, 0 horizontal overflow on 40+ screens |
 | Backup → restore | `ops/backup.sh` + `ops/restore.sh` | **Pass**: row counts identical, uploads restored, wrong passphrase rejected |
 | Legacy data import | `scripts/import-legacy.js` (dry run, real run, re-run) | **Pass**: names split, photos imported, notes kept, invalid grade reported, re-run idempotent |

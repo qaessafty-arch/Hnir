@@ -30,7 +30,7 @@ Status meanings:
 | 7 | Sessions | 256-bit random token; only its SHA-256 is stored server-side; idle timeout 30 min, absolute 12 h (both configurable); purge job every 30 min | ✅ | logout test |
 | 8 | Cookie flags | `HttpOnly; SameSite=Strict; Path=/`. In production `Secure` and the `__Host-` prefix | ✅ | cookie test |
 | 9 | Session rotation | A new session ID on login, MFA verification, MFA enrolment and password change; all sessions revoked on password change/reset, role change, disable or archive | ✅ | tests |
-| 10 | MFA | TOTP (RFC 6238, otplib). Required for roles configured in Settings (default super_admin + principal; super_admin cannot be removed). Secret encrypted with AES-256-GCM (`APP_ENCRYPTION_KEY`) | ✅ | MFA test |
+| 10 | MFA | TOTP (RFC 6238, built-in implementation in `lib/totp.js`). Required for roles configured in Settings (default super_admin + principal; super_admin cannot be removed). Secret encrypted with AES-256-GCM (`APP_ENCRYPTION_KEY`) | ✅ | MFA test |
 | 11 | Password recovery | An administrator issues a one-time reset code (SHA-256 stored, 24 h expiry, single use, previous codes invalidated). Self-service email reset is **not** built because no mail service is configured | ✅ / ⬜ email | reset test |
 | 12 | CSRF | Synchronizer token (`X-CSRF-Token`, kept in memory only) on every non-GET request, plus an `Origin` check, plus SameSite=Strict | ✅ | CSRF test (missing token, forged Origin) |
 | 13 | XSS | React auto-escaping, no `dangerouslySetInnerHTML`, CSP `script-src 'self'`, no inline scripts, `object-src 'none'`, `frame-ancestors 'none'` | ✅ | XSS test; Playwright run found no CSP violations (the build sets `assetsInlineLimit: 0` so fonts are not `data:` URIs) |
