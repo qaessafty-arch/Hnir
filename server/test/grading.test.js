@@ -76,3 +76,17 @@ test('buildReport: per-subject pass marks and overall = mean of subjects', () =>
   assert.strictEqual(r.overall_band, 'pass');
   assert.strictEqual(r.subjects_failed, 1);
 });
+
+test('TOTP matches the RFC 6238 / RFC 4226 test vectors', () => {
+  const totp = require('../src/lib/totp');
+  const key = Buffer.from('12345678901234567890');
+  // RFC 4226 Appendix D (6-digit HOTP)
+  assert.deepStrictEqual([0, 1, 2, 9].map((c) => totp.hotp(key, c)), ['755224', '287082', '359152', '520489']);
+  // RFC 6238: T=59s → counter 1 → 94287082 (8 digits) → 287082 (6 digits)
+  const secret = totp.base32Encode(key);
+  assert.strictEqual(totp.generate(secret, 59_000), '287082');
+  assert.ok(totp.verify(secret, '287082', 59_000));
+  assert.ok(totp.verify(secret, '287082', 89_000));            // one step of drift accepted
+  assert.ok(!totp.verify(secret, '287082', 150_000));          // too old
+  assert.ok(!totp.verify(secret, '12345', 59_000));            // malformed
+});

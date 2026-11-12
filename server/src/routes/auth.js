@@ -2,7 +2,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const QRCode = require('qrcode');
-const otp = require('otplib');
+const totp = require('../lib/totp');
 const db = require('../lib/db');
 const config = require('../lib/config');
 const { z, parse } = require('../lib/validate');
@@ -141,9 +141,9 @@ router.post('/reset-password', loginLimiter, ah(async (req, res) => {
 // ---- MFA (TOTP) ----
 router.post('/mfa/setup', requireAuth, mfaLimiter, ah(async (req, res) => {
   if (req.user.mfa_enabled) throw badRequest('mfa_already_enabled');
-  const secret = otp.generateSecret();
+  const secret = totp.generateSecret();
   await db.query('UPDATE users SET mfa_secret_enc = $2 WHERE id = $1', [req.user.id, encrypt(secret)]);
-  const uri = otp.generateURI({ issuer: 'Darwaza School', label: req.user.username, secret });
+  const uri = totp.keyUri({ issuer: 'Darwaza School', label: req.user.username, secret });
   res.json({ secret, qr: await QRCode.toDataURL(uri, { margin: 1, width: 220 }) });
 }));
 
@@ -151,10 +151,7 @@ async function checkTotp(userId, token) {
   const { rows } = await db.query('SELECT mfa_secret_enc FROM users WHERE id = $1', [userId]);
   if (!rows[0]?.mfa_secret_enc) return false;
   const secret = decrypt(rows[0].mfa_secret_enc);
-  try {
-    const r = await otp.verify({ secret, token: String(token), epochTolerance: 30 });
-    return r.valid;
-  } catch { return false; }
+  try { return totp.verify(secret, token); } catch { return false; }
 }
 
 router.post('/mfa/enable', requireAuth, mfaLimiter, ah(async (req, res) => {

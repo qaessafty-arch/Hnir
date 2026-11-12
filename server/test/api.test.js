@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const otp = require('otplib');
+const totp = require('../src/lib/totp');
 const h = require('./helpers');
 
 let ids;
@@ -76,7 +76,7 @@ test.describe('authentication', () => {
     assert.ok(setup.body.secret && setup.body.qr.startsWith('data:image/png'));
     const bad = await s.post('/api/auth/mfa/enable').send({ code: '000000' });
     assert.strictEqual(bad.status, 400);
-    const code = await otp.generate({ secret: setup.body.secret });
+    const code = totp.generate(setup.body.secret);
     assert.strictEqual((await s.post('/api/auth/mfa/enable').send({ code })).status, 200);
     assert.strictEqual((await s.agent.get('/api/dashboard')).status, 200);
     // Secret is encrypted at rest
@@ -86,7 +86,7 @@ test.describe('authentication', () => {
     const s2 = await h.login('super1');
     assert.strictEqual(s2.me.mfaState, 'pending_verify');
     assert.strictEqual((await s2.get('/api/users')).body.error.code, 'mfa_required');
-    const v = await s2.post('/api/auth/mfa/verify').send({ code: await otp.generate({ secret: setup.body.secret }) });
+    const v = await s2.post('/api/auth/mfa/verify').send({ code: totp.generate(setup.body.secret) });
     assert.strictEqual(v.status, 200);
     assert.strictEqual((await s2.agent.get('/api/users')).status, 200);
   });
