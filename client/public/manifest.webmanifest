@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "قوتابخانەی دەروازەی ناحکومی — Darwaza Private School",
+  "short_name": "Darwaza",
+  "description": "Darwaza Private School — grades, report cards and school management. سیستەمی بەڕێوەبردنی قوتابخانەی دەروازە.",
+  "lang": "ckb",
+  "dir": "rtl",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#182B53",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/brand/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Grades / نمرەکان", "url": "/grades", "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Reports / ڕاپۆرتەکان", "url": "/reports", "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

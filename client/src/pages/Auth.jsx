@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 import { api, normalizeDigits } from '../lib/api';
 import Logo from '../components/Logo';
 import { Field } from '../components/ui';
+import InstallButton from '../components/InstallButton';
 
 function AuthShell({ children }) {
   const { t, lang, setLang } = useI18n();
@@ -21,7 +22,8 @@ function AuthShell({ children }) {
       </section>
       <section className="auth-panel">
         <div className="auth-card">
-          <div className="auth-top">
+          <div className="auth-top" style={{ gap: 8 }}>
+            <InstallButton />
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLang(lang === 'ckb' ? 'en' : 'ckb')}><Globe size={16} />{t('switchLang')}</button>
           </div>
           <div className="auth-mobile-logo"><Logo size={120} /></div>

@@ -304,7 +304,28 @@ Delete that CSV after distributing it.
 - **Parents:** sign in with the account the school created. If you have several children, pick one at the top.
 - Only grades that the school has **published** are shown. Forgot your password? Ask the school office for a reset code and use *I have a reset code* on the login page.
 
-## 16. Completed vs. remaining
+## 16. Installable app (PWA)
+
+The system installs as an app from the same link; there is no separate codebase and no app store. Files:
+- `client/public/manifest.webmanifest`
+- `client/public/sw.js`
+- `client/public/offline.html`
+- `client/src/lib/pwa.js`
+- `client/src/components/InstallButton.jsx`
+
+| Device | How to install |
+|---|---|
+| Android (Chrome), Windows / Mac (Chrome, Edge) | Open the site → **Install app** button (gold, top of the screen or the login page) → Install |
+| iPhone / iPad (Safari) | **Install app** shows the steps: Share → *Add to Home Screen* → Add |
+
+- **App appearance:** opens full-screen with the Darwaza icon (made from the original logo; Android gets a "maskable" version with safe padding) and a navy title bar. Kurdish RTL is the default.
+- **Privacy:** the service worker caches only the public app shell (HTML, JS, CSS, fonts, logo). `/api/*` is never cached, so grades and student records are not stored on phones or shared computers. Verified by `e2e/pwa.js`.
+- **Updates:** page loads always come from the network, so a new deployment reaches installed apps on their next launch.
+- **Offline:** a bilingual "you are offline" screen.
+- **Tested:** Chromium reports the app as installable (`Page.getInstallabilityErrors` = none). Installation on a physical iPhone and Android device should be spot-checked.
+- **App stores:** not published to Google Play or the App Store. If required later, the same app can be wrapped for Google Play with a Trusted Web Activity (needs a Google Play developer account). The App Store requires a Mac and an Apple Developer account.
+
+## 17. Completed vs. remaining
 
 **Completed and tested:** everything listed in the testing report: auth, MFA, RBAC, isolation, grade entry, workflow, corrections, concurrency, reports and exports, import, bilingual UI, responsive layouts, backups, load test at 1,000 accounts.
 

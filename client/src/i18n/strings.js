@@ -125,6 +125,7 @@ export const strings = {
     n_grades_submitted: 'Grades submitted for approval: {title}', n_grades_returned: 'Grades returned for changes: {title}', n_grades_published: 'New grades published: {title}',
     // account
     accountTitle: 'Account security', language: 'Language',
+    installApp: 'Install app', installDone: 'Darwaza app installed', iosStep1: 'Tap the Share button in Safari', iosStep2: 'Choose “Add to Home Screen”', iosStep3: 'Tap “Add” — the Darwaza app appears on your home screen.',
     // errors
     error: 'Something went wrong', errorRetry: 'Try again', notFound: 'Page not found', forbidden: 'You do not have access to this page.',
     e_invalid_credentials: 'Incorrect username or password.', e_account_locked: 'Too many failed attempts. The account is locked for a few minutes.',
@@ -257,6 +258,7 @@ export const strings = {
     notifications: 'ئاگادارکردنەوەکان', noNotifications: 'هیچ ئاگادارکردنەوەیەک نییە', markAllRead: 'هەمووی وەک خوێندراو دیاری بکە',
     n_grades_submitted: 'نمرە نێردرا بۆ پەسەندکردن: {title}', n_grades_returned: 'نمرە گەڕێندرایەوە بۆ گۆڕانکاری: {title}', n_grades_published: 'نمرەی نوێ بڵاوکرایەوە: {title}',
     accountTitle: 'پاراستنی هەژمار', language: 'زمان',
+    installApp: 'دامەزراندنی ئەپ', installDone: 'ئەپی دەروازە دامەزرا', iosStep1: 'لە Safari دوگمەی «هاوبەشکردن» (Share) دابگرە', iosStep2: '«زیادکردن بۆ شاشەی سەرەکی» (Add to Home Screen) هەڵبژێرە', iosStep3: '«زیادکردن» (Add) دابگرە — ئەپی دەروازە لەسەر شاشەکەت دەردەکەوێت.',
     error: 'هەڵەیەک ڕوویدا', errorRetry: 'دووبارە هەوڵبدەرەوە', notFound: 'لاپەڕەکە نەدۆزرایەوە', forbidden: 'دەستگەیشتنت بەم لاپەڕەیە نییە.',
     e_invalid_credentials: 'ناوی بەکارهێنەر یان وشەی نهێنی هەڵەیە.', e_account_locked: 'هەوڵی هەڵە زۆر بوو. هەژمارەکە بۆ چەند خولەکێک قوفڵکراوە.',
     e_too_many_attempts: 'هەوڵ زۆر بوو. تکایە چاوەڕێ بکە و دووبارە هەوڵبدەرەوە.', e_invalid_code: 'ئەم کۆدە دروست نییە. بەرنامەی پشتڕاستکەرەوەکەت بپشکنە.',

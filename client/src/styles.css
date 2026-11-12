@@ -310,3 +310,10 @@ tr.row-conflict { background: var(--warn-bg); }
 }
 [dir='rtl'] .flip-rtl { transform: scaleX(-1); }
 @media (max-width: 640px) { .who { display: none; } }
+
+/* Installed-app (standalone) safe areas: iPhone notch / home indicator */
+.topbar { padding-block-start: max(10px, env(safe-area-inset-top)); }
+.sticky-bar { padding-block-end: max(12px, env(safe-area-inset-bottom)); }
+.toasts { inset-block-end: max(20px, env(safe-area-inset-bottom)); }
+.sidebar { padding-block-start: env(safe-area-inset-top); padding-block-end: env(safe-area-inset-bottom); }
+.auth-top { display: flex; }

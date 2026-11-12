@@ -1,0 +1,4 @@
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f5f7fb;font-family:Vazirmatn,system-ui,sans-serif;color:#0f172a;text-align:center;padding:24px}
+main{max-width:420px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px;border-top:5px solid #E59B24}
+h1{font-size:1.25rem;color:#182B53;margin:16px 0 6px}h2{font-size:1.05rem;color:#182B53;margin:18px 0 6px}
+p{color:#475569;margin:0}a{display:inline-block;margin-top:20px;background:#182B53;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}

@@ -8,6 +8,7 @@ import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import Logo from './Logo';
+import InstallButton from './InstallButton';
 
 export const NAV = [
   { section: 'navOverview', items: [
@@ -114,6 +115,7 @@ export default function Layout() {
         <header className="topbar">
           <button type="button" className="btn btn-ghost btn-icon menu-btn" onClick={() => setOpen(true)} aria-label={t('menu')}><Menu size={20} /></button>
           <div className="spacer" />
+          <InstallButton compact />
           <Notifications />
           <button type="button" className="btn btn-secondary btn-sm" onClick={switchLang} lang={lang === 'ckb' ? 'en' : 'ckb'}><Globe size={16} />{t('switchLang')}</button>
           <div className="row" style={{ gap: 8 }}>

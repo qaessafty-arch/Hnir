@@ -13,6 +13,9 @@ import { I18nProvider } from './i18n';
 import { AuthProvider } from './lib/auth';
 import { ConfirmProvider, ToastProvider } from './components/ui';
 import App from './App';
+import { initPwa } from './lib/pwa';
+
+initPwa();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

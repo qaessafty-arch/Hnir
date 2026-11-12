@@ -11,6 +11,7 @@ A secure, bilingual (Central Kurdish RTL / English LTR), database-backed school 
 | Security | argon2id, server sessions (HttpOnly / SameSite=Strict), TOTP MFA for privileged roles, CSRF tokens, strict CSP, rate limiting and lockout, object-level authorization (IDOR-tested), append-only audit log, encrypted backups |
 | Grades | Roster entry per class and subject, draft → submit → approve → publish workflow, missing/excused statuses, corrections with reasons and full history, conflict-safe concurrent editing, configurable grading policy |
 | Reports | Printable A4 report cards with the official logo and signatures, class summaries, school-wide grade overview, audited CSV exports |
+| App | Installable on Android, iPhone/iPad, Windows and Mac (Progressive Web App): own icon, full screen, offline screen; student data is never stored on the device |
 | Scale | Load-tested with 1,000 accounts and 26,000 grades: 200 concurrent students at p99 132 ms (1 process) / 67 ms (4 workers), and 48 concurrent grade writers with 0 lost updates |
 
 ## Quick start (development)
@@ -37,6 +38,7 @@ For production, **do not seed demo data**. Create the first administrator with `
 createdb -O darwaza darwaza_test
 npm test --prefix server                       # 40 unit + integration/security tests (real PostgreSQL)
 node e2e/smoke.js http://localhost:3000 out    # browser test: roles × languages × viewports (needs demo data)
+node e2e/pwa.js http://localhost:3000          # installable-app checks (manifest, service worker, offline, no data cached)
 node ops/loadtest.js http://localhost:3000 1000 30   # load test (separate DB seeded with 1000 students, LOGIN_RATE_LIMIT raised)
 ```
 

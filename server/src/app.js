@@ -66,7 +66,8 @@ function createApp() {
   // Static client (production build). Hashed assets are immutable; index.html is never cached.
   if (fs.existsSync(config.clientDist)) {
     app.use('/assets', express.static(path.join(config.clientDist, 'assets'), { immutable: true, maxAge: '1y', index: false }));
-    app.use(express.static(config.clientDist, { index: false, maxAge: '1h' }));
+    app.get(['/sw.js', '/manifest.webmanifest'], (req, res, next) => { res.set('Cache-Control', 'no-cache'); next(); });
+    app.use(express.static(config.clientDist, { index: false, maxAge: '1h', setHeaders: (res, p) => { if (/(sw\.js|manifest\.webmanifest)$/.test(p)) res.set('Cache-Control', 'no-cache'); } }));
     app.get('*', (_req, res) => {
       res.set('Cache-Control', 'no-cache');
       res.sendFile(path.join(config.clientDist, 'index.html'));
