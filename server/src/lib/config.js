@@ -34,5 +34,6 @@ module.exports = {
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProd,
   logLevel: process.env.LOG_LEVEL || (env === 'test' ? 'silent' : 'info'),
   clientDist: process.env.CLIENT_DIST || require('path').resolve(__dirname, '../../../client/dist'),
-  loginRateLimit: Number(process.env.LOGIN_RATE_LIMIT || 300), // per IP per 15 min
+  loginRateLimit: Number(process.env.LOGIN_RATE_LIMIT || 300), // per IP per 15 min (legacy setting)
+  loginFailLimit: Number(process.env.LOGIN_FAIL_LIMIT || 30), // wrong sign-in codes per IP per 15 min
 };

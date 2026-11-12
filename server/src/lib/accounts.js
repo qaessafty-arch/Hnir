@@ -1,17 +1,28 @@
 'use strict';
 const { hashPassword } = require('./passwords');
-const { generatePassword, generateLoginCode, normalizeLoginCode, sha256 } = require('./crypto');
+const crypto = require('crypto');
+const { generatePassword, loginCodeHash } = require('./crypto');
 
-/** Issue a new staff sign-in code (replaces any previous one). Returns the code; only its hash is stored. */
-async function issueLoginCode(c, userId) {
-  for (let i = 0; i < 5; i++) {
-    const code = generateLoginCode();
+/**
+ * A random 4-digit number (1000–9999) not used by any student ID or staff sign-in code.
+ * Students and staff share one 4-digit space so typing "4821" can never match two accounts.
+ */
+async function freeFourDigits(c) {
+  for (let i = 0; i < 200; i++) {
+    const d = String(crypto.randomInt(1000, 10000));
     const r = await c.query(
-      `UPDATE users SET login_code_hash = $2, login_code_set_at = now(), updated_at = now() WHERE id = $1
-         AND NOT EXISTS (SELECT 1 FROM users WHERE login_code_hash = $2)`, [userId, sha256(normalizeLoginCode(code))]);
-    if (r.rowCount) return code;
+      `SELECT 1 FROM students WHERE student_no = $1 UNION ALL SELECT 1 FROM users WHERE login_code_hash = $2 OR username = $1 LIMIT 1`,
+      [`DAR-${d}`, loginCodeHash(d)]);
+    if (!r.rowCount) return d;
   }
-  throw new Error('could not issue a unique sign-in code');
+  throw Object.assign(new Error('no free 4-digit number left'), { status: 409, code: 'no_free_number' });
+}
+
+/** Issue a new staff sign-in code (4 random digits; replaces any previous one). Only its hash is stored. */
+async function issueLoginCode(c, userId) {
+  const code = await freeFourDigits(c);
+  await c.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now(), updated_at = now() WHERE id = $1', [userId, loginCodeHash(code)]);
+  return code;
 }
 
 /**
@@ -32,13 +43,13 @@ async function createAccount(c, { username, fullName, email = null, roles }) {
   return { userId, loginCode };
 }
 
+/** New student ID: DAR + 4 random digits, unique across students and staff codes. */
 async function nextStudentNo(c) {
-  const r = await c.query(`SELECT 'DAR-' || lpad(nextval('student_no_seq')::text, 4, '0') AS no`);
-  return r.rows[0].no;
+  return `DAR-${await freeFourDigits(c)}`;
 }
 async function nextStaffNo(c) {
   const r = await c.query(`SELECT 'STF-' || lpad(nextval('staff_no_seq')::text, 4, '0') AS no`);
   return r.rows[0].no;
 }
 
-module.exports = { createAccount, issueLoginCode, nextStudentNo, nextStaffNo };
+module.exports = { createAccount, issueLoginCode, freeFourDigits, nextStudentNo, nextStaffNo };

@@ -105,7 +105,7 @@ Charts follow the dataviz rules: single series with direct value labels, one hue
 
 Built from the school's reference screenshot:
 - full-width **navy header**: logo, Kurdish name, English name and subtitle, user badge, gold language button, red logout;
-- white **profile card**: photo, name, **DAR-0001** ID, class, year, term, gold **Print grade card** button;
+- white **profile card**: photo, name, **DAR-4821**-style ID, class, year, term, gold **Print grade card** button;
 - **three summary cards** with coloured side accents: *Overall performance* (emerald when passing), *Weekly average* (with the 0–10 scale when all subjects share it), *Behavior evaluation*;
 - **week navigation**: year, term, week selector with previous/next;
 - the **Weekly Student Grade Card** table: Subject, Week, Obtained, Maximum, Percentage, Teacher comments;

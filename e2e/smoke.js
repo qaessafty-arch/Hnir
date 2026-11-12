@@ -6,8 +6,9 @@ const fs = require('fs');
 const BASE = process.argv[2] || 'http://localhost:3000';
 const OUT = process.argv[3] || 'e2e-shots';
 fs.mkdirSync(OUT, { recursive: true });
-// Sign-in is by code only: students type their ID, demo staff use DEMO codes (e.g. demo.principal → PRINCIPAL-DEMO).
-const codeOf = (user) => (user.startsWith('demo.') ? `${user.slice(5).toUpperCase()}-DEMO` : user);
+// Sign-in is by code only: students type their student ID; demo staff have fixed 4-digit codes (server/scripts/seed-demo.js).
+const DEMO_CODES = { 'demo.admin': '4721', 'demo.principal': '3958', 'demo.registrar': '6204', 'demo.auditor': '8137', 'demo.teacher1': '2546', 'demo.teacher2': '7319' };
+const codeOf = (user) => DEMO_CODES[user] || user;
 const problems = [];
 
 async function session(browser, user, { lang = 'ckb', viewport = { width: 1366, height: 860 } } = {}) {
@@ -49,7 +50,7 @@ async function shot(page, name, path) {
   p0.on('console', (m) => { if (m.type() === 'error' && !/401/.test(m.text())) problems.push(`login console: ${m.text()}`); });
   await p0.goto(`${BASE}/login`); await shot(p0, '01-login-ckb');
   await p0.click('text=English'); await shot(p0, '02-login-en');
-  await p0.fill('input[autocomplete=username]', 'WRONG-CODE');
+  await p0.fill('input[autocomplete=username]', '0000');
   await p0.click('form button:not([type=button])');
   await p0.waitForSelector('.alert-bad'); await shot(p0, '03-login-error-en');
   await c0.close();
@@ -109,7 +110,7 @@ async function shot(page, name, path) {
     await ctx.close();
   }
   {
-    const { ctx, page } = await session(browser, 'DAR-0001', { lang: 'ckb' });
+    const { ctx, page } = await session(browser, 'DAR-2741', { lang: 'ckb' });
     await page.waitForSelector('.wk-table');
     await shot(page, '40-student-portal-ckb');
     await page.click('.wk-history summary'); await shot(page, '40b-student-history-ckb');
@@ -120,7 +121,7 @@ async function shot(page, name, path) {
     await ctx.close();
   }
   {
-    const { ctx, page } = await session(browser, 'DAR-0001', { lang: 'en' });
+    const { ctx, page } = await session(browser, 'DAR-2741', { lang: 'en' });
     await shot(page, '41-student-portal-en');
     await page.emulateMedia({ media: 'print' });
     await page.screenshot({ path: `${OUT}/42-student-print.png`, fullPage: true });
@@ -128,7 +129,7 @@ async function shot(page, name, path) {
     await ctx.close();
   }
   for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'], ['demo.principal', '/results', '55-mobile-results'], ['demo.principal', '/approvals', '56-mobile-approvals'], ['demo.teacher1', '/grades/sheet/1', '60-mobile-grade-entry'], ['demo.admin', '/system?tab=types', '61-mobile-account-types'],
-    ['DAR-0001', '/', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
+    ['DAR-2741', '/', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
     const { ctx, page } = await session(browser, u, { lang: 'ckb', viewport: { width: 390, height: 844 } });
     await shot(page, name, path);
     if (name === '50-mobile-dashboard') {

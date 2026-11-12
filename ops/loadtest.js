@@ -19,7 +19,9 @@ const BASE = process.argv[2] || 'http://localhost:3000';
 const N = Number(process.argv[3] || 1000);
 const DURATION = Number(process.argv[4] || 30);
 
-const codeOf = (user) => (user.startsWith('demo.') ? `${user.slice(5).toUpperCase()}-DEMO` : user);
+// Demo staff 4-digit codes (server/scripts/seed-demo.js). Students: the load-test DB must give them known IDs.
+const DEMO_CODES = { 'demo.principal': '3958', 'demo.teacher1': '2546', 'demo.teacher2': '7319', 'demo.teacher3': '5082', 'demo.teacher4': '9463', 'demo.teacher5': '1675', 'demo.teacher6': '6830' };
+const codeOf = (user) => DEMO_CODES[user] || user;
 async function login(username) {
   const t0 = performance.now();
   const r = await fetch(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: codeOf(username) }) });
@@ -43,7 +45,8 @@ async function pool(items, conc, fn) {
   const results = {};
   if (!process.env.ONLY_WRITES) {
   // ---- A: logins ----
-  const usernames = Array.from({ length: N }, (_, i) => `DAR-${String(i + 1).padStart(4, '0')}`);
+  // Student IDs are random: read them from the database the server uses (LOADTEST_DATABASE_URL).
+  const usernames = (await new (require('pg').Pool)({ connectionString: process.env.LOADTEST_DATABASE_URL }).query('SELECT student_no FROM students ORDER BY id LIMIT $1', [N])).rows.map((r) => r.student_no);
   const tA = performance.now();
   const sessions = await pool(usernames, 25, (u) => login(u));
   const lat = sessions.map((s) => s.ms);

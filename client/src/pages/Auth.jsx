@@ -58,7 +58,7 @@ export function LoginPage() {
       <form onSubmit={submit} className="stack" noValidate>
         <Field label={t('loginCode')} hint={t('loginCodeHint')} required>
           {(p) => <input {...p} className="input login-code" dir="ltr" autoComplete="username" autoCapitalize="characters" spellCheck={false} required autoFocus
-            placeholder="DAR-0001" value={code} onChange={(e) => setCode(e.target.value)} />}
+            placeholder="DAR-4821" value={code} onChange={(e) => setCode(e.target.value)} />}
         </Field>
         <button className="btn btn-primary btn-block" disabled={busy || !code.trim()}><LogIn size={18} className="flip-rtl" />{busy ? t('signingIn') : t('signIn')}</button>
       </form>

@@ -19,9 +19,9 @@ Status meanings:
 
 ## 2.2a Sign-in by code only (changed at the school's request)
 
-Passwords were removed. Students sign in with their student ID; staff sign in with a personal secret code (10 characters from a 32-letter alphabet, 50 bits; SHA-256 stored; new code revokes the old one and all sessions; staff usernames are not accepted). Accounts with any non-student role cannot sign in with a student ID. A per-IP rate limit (`LOGIN_RATE_LIMIT`, 300 per 15 min) remains. MFA for configured roles is unchanged. Tested in `api.test.js` › *authentication*.
+Passwords were removed. Students sign in with their student ID (DAR + 4 random digits, or just the digits); staff sign in with a personal 4-digit code (keyed HMAC-SHA-256 stored, so a database copy alone does not reveal codes; a new code revokes the old one and all sessions; staff usernames are not accepted). Students and staff share one 4-digit space, so a number never matches two accounts. Accounts with any non-student role cannot sign in with a student ID. Wrong codes are limited to `LOGIN_FAIL_LIMIT` (30) per IP per 15 min; successful sign-ins do not count. MFA for configured roles is unchanged. Tested in `api.test.js` › *authentication*.
 
-**Risk accepted by the school:** student IDs are sequential and not secret, so anyone who knows or guesses an ID (e.g. `DAR-0002`) can view that student's grades and profile. Rows 1–5 and 11 below (password hashing, policy, lockout, reset) describe the previous password design and no longer apply to sign-in. Recommendation if this becomes a concern: give students a secret code too (the staff mechanism already supports it).
+**Risk accepted by the school:** a 4-digit code has only 9,000 possibilities and student IDs are not secret. With ~1,000 students a random guess finds *some* student about 1 time in 9, and an attacker using many addresses can try all staff codes. Anyone who knows a student's ID can view that student's grades and profile. Keep MFA on for the super administrator. Rows 1–5 and 11 below (password hashing, policy, lockout, reset) describe the previous password design and no longer apply to sign-in. Recommendation if this becomes a concern: give students a secret code too (the staff mechanism already supports it).
 
 ## 2.2 Controls
 

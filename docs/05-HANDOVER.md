@@ -294,7 +294,7 @@ The menu has 8 items. Start every day on **Home**.
 
 ## 15. Student guide
 
-- Sign in by typing only your student ID (e.g. `DAR-0001`). No password is needed.
+- Sign in by typing only your student ID (e.g. `DAR-4821`, or just `4821`). No password is needed.
 - **My Grades** opens your **Weekly Student Grade Card**: overall performance, weekly average, behavior evaluation, and a table of every subject for the chosen week (obtained mark, maximum, percentage, teacher comment). Use the week arrows or choose a year/term/week. *Performance history* shows your weekly averages and each subject's progress. **Print grade card** opens a separate A4 report card ready to print or save as PDF.
 - It also shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback. Choose a term or the whole year. **Print** gives an A4 report card.
 - Only grades the school has made visible are shown.
@@ -302,15 +302,15 @@ The menu has 8 items. Start every day on **Home**.
 ## 15b. Sign-in by code only (school decision)
 
 At the school's request there are **no passwords**:
-- **Students** type their student ID (`DAR-0001`; lower case, spaces and Kurdish digits are accepted).
-- **Staff** type a personal secret sign-in code (`XXXXX-XXXXX`) issued by an administrator (*Staff → Accounts →* key button) or by `scripts/issue-login-code.js`. Only a hash is stored; issuing a new code ends the old one and signs the user out. A staff username is **not** a code.
+- **Students** type their student ID (`DAR-4821`, or only the 4 digits; lower case, spaces and Kurdish digits are accepted).
+- **Staff** type a personal 4-digit sign-in code issued by an administrator (*Staff → Accounts →* key button) or by `scripts/issue-login-code.js`. Only a hash is stored; issuing a new code ends the old one and signs the user out. A staff username is **not** a code.
 - The super administrator still confirms with the authenticator app (MFA) if that is enabled in Settings.
 
-**Known consequence, accepted by the school:** student IDs are not secret, so anyone who knows or guesses a student's ID can open that student's grades and profile. Migration `006_code_login.sql`.
+**Known consequence, accepted by the school:** codes are only 4 digits and student IDs are not secret, so anyone who knows or guesses a student's ID can open that student's grades and profile. Wrong attempts are limited to `LOGIN_FAIL_LIMIT` (30) per address per 15 minutes. Migrations `006_code_login.sql`, `007_random_ids.sql`.
 
 ## 15a. Student IDs
 
-Student IDs are permanent and use the format **DAR-0001** (migration 005 renumbered existing students in creation order). A student's username is their ID, and the ID is all they type to sign in.
+Student IDs are **DAR + 4 random digits** (e.g. DAR-4821; migration 007 renumbered existing students randomly). Students and staff codes share one 4-digit space, so the same 4 digits never belong to two accounts. At most 9,000 students. A student's username is their ID, and the ID is all they type to sign in.
 
 ## 16. Installable app (PWA)
 

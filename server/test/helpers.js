@@ -10,7 +10,7 @@ const { migrate } = require('../src/migrate');
 const { createApp } = require('../src/app');
 const { hashPassword } = require('../src/lib/passwords');
 const { invalidateSettings } = require('../src/lib/settings');
-const { sha256, normalizeLoginCode } = require('../src/lib/crypto');
+const { loginCodeHash } = require('../src/lib/crypto');
 
 const PW = 'Correct-Horse-9';
 let app;
@@ -27,7 +27,7 @@ async function resetDb() {
 /** Test staff sign-in code for a username (staff sign in with a secret code only). */
 const codeFor = (username) => `${username}-TEST`;
 async function setCode(username) {
-  await db.query('UPDATE users SET login_code_hash = $2 WHERE username = $1', [username, sha256(normalizeLoginCode(codeFor(username)))]);
+  await db.query('UPDATE users SET login_code_hash = $2 WHERE username = $1', [username, loginCodeHash(codeFor(username))]);
 }
 /** Fixture students sign in with their student ID: stu1 → DAR-9001. */
 const studentNo = (alias) => `DAR-90${String(alias.slice(3)).padStart(2, '0')}`;

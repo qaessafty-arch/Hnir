@@ -37,16 +37,40 @@ test.describe('authentication', () => {
     // The principal issues a new code: the old one stops working and old sessions end.
     const p = await h.login('principal1');
     const r = await p.post(`/api/users/${ids.teacherAUser}/login-code`).send({});
-    assert.match(r.body.login_code, /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/);
+    assert.match(r.body.login_code, /^\d{4}$/);
     assert.strictEqual((await s.agent.get('/api/auth/me')).status, 401);
     assert.strictEqual((await h.request().post('/api/auth/login').send({ code: h.codeFor('teacherA') })).status, 401);
-    await h.loginWithCode(r.body.login_code.toLowerCase());
+    await h.loginWithCode(r.body.login_code);
     // Only a hash is stored.
     const row = await h.db.query('SELECT login_code_hash FROM users WHERE id = $1', [ids.teacherAUser]);
     assert.ok(row.rows[0].login_code_hash && !row.rows[0].login_code_hash.includes(r.body.login_code));
     await h.setCode('teacherA');
     // Students have no staff code to issue.
     assert.strictEqual((await p.post(`/api/users/${(await h.db.query("SELECT id FROM users WHERE username='DAR-9001'")).rows[0].id}/login-code`).send({})).status, 404);
+  });
+
+  test('students can also type just the 4 digits of their ID; new student IDs are DAR + 4 random digits', async () => {
+    const s = await h.loginWithCode('9001');
+    assert.deepStrictEqual(s.me.user.roles, ['student']);
+    const reg = await h.login('registrar1');
+    const nos = [];
+    for (let i = 0; i < 3; i++) nos.push((await reg.post('/api/students').send({ full_name_ckb: `هەڕەمەکی ${i}`, section_id: ids.secA })).body.username);
+    assert.ok(nos.every((n) => /^DAR-[1-9]\d{3}$/.test(n)), nos.join(','));
+    assert.strictEqual(new Set(nos).size, 3);
+    await h.loginWithCode(nos[0].slice(4));
+    // Remove them again so later tests see the original class roster.
+    await h.db.query(`DELETE FROM sessions WHERE user_id IN (SELECT user_id FROM students WHERE student_no = ANY($1))`, [nos]);
+    await h.db.query(`DELETE FROM enrollments WHERE student_id IN (SELECT id FROM students WHERE student_no = ANY($1))`, [nos]);
+    await h.db.query(`UPDATE students SET status = 'archived' WHERE student_no = ANY($1)`, [nos]);
+  });
+
+  test('a staff code never equals a student ID number, so 4 digits always mean one account', async () => {
+    const p = await h.login('principal1');
+    const codes = [];
+    for (let i = 0; i < 20; i++) codes.push((await p.post(`/api/users/${ids.auditor}/login-code`).send({})).body.login_code);
+    const students = new Set((await h.db.query('SELECT student_no FROM students')).rows.map((r) => r.student_no.slice(4)));
+    assert.ok(codes.every((c) => /^\d{4}$/.test(c) && !students.has(c)));
+    await h.setCode('auditor1');
   });
 
   test('a staff account that also has the student role cannot be entered with a student ID', async () => {
@@ -490,7 +514,7 @@ test.describe('account types managed by the super administrator', () => {
     assert.strictEqual((await p.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] })).body.error.code, 'cannot_assign_privileged_role');
     const u = await sa.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] });
     assert.strictEqual(u.status, 201);
-    assert.match(u.body.login_code, /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/);
+    assert.match(u.body.login_code, /^\d{4}$/);
     const secCode = u.body.login_code;
     let s = await h.loginWithCode(secCode);
     assert.strictEqual((await s.get('/api/students')).status, 200);

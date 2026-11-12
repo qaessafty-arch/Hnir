@@ -7,21 +7,22 @@ const db = require('../lib/db');
 const config = require('../lib/config');
 const { z, parse } = require('../lib/validate');
 const { ah, unauthorized, badRequest, forbidden } = require('../lib/errors');
-const { encrypt, decrypt, sha256, normalizeLoginCode } = require('../lib/crypto');
+const { encrypt, decrypt, sha256, normalizeLoginCode, loginCodeHash } = require('../lib/crypto');
 const { audit } = require('../lib/audit');
 const { getSettings } = require('../lib/settings');
 const { createSession, destroySession, requireAuth, loadUserAuthz } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Sign-in is by code only. Students type their student ID; staff type a secret 10-character code
-// (50 bits, so guessing is not feasible). A per-IP ceiling slows bulk probing; it stays generous because
-// a whole school can sit behind one NAT address.
+// Sign-in is by code only: students type their student ID (DAR + 4 random digits), staff a 4-digit code.
 const limitHandler = (_req, res) => res.status(429).json({ error: { code: 'too_many_attempts' } });
 const skipInTest = () => config.isTest && process.env.TEST_RATE_LIMIT !== '1';
+// Codes are only 4 digits, so wrong attempts are limited tightly per address (successful sign-ins do not
+// count, so a whole school behind one NAT address is not blocked by normal use).
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60_000, limit: config.loginRateLimit, standardHeaders: 'draft-7', legacyHeaders: false,
+  windowMs: 15 * 60_000, limit: config.loginFailLimit, standardHeaders: 'draft-7', legacyHeaders: false,
   keyGenerator: (req) => rateLimit.ipKeyGenerator(req.ip), handler: limitHandler, skip: skipInTest,
+  skipSuccessfulRequests: true,
 });
 const mfaLimiter = rateLimit({
   windowMs: 15 * 60_000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false,
@@ -40,28 +41,38 @@ function publicUser(req) {
 }
 
 const STUDENT_ID = /^DAR(\d{1,6})$/;
+const DIGITS = /^\d{4}$/;
+
+async function findStudent(studentNo) {
+  const { rows } = await db.query(
+    `SELECT u.id, u.status, u.mfa_enabled FROM users u
+      WHERE u.username = $1 AND u.deleted_at IS NULL
+        AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key = 'student')
+        AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key <> 'student')`,
+    [studentNo]);
+  return rows[0];
+}
 
 router.post('/login', loginLimiter, ah(async (req, res) => {
   const body = parse(z.object({ code: z.string().trim().min(1).max(100) }), req.body);
   const code = normalizeLoginCode(body.code);
+  // Students: "DAR-4821" or just "4821". Staff: their 4-digit code. Students and staff share one 4-digit
+  // space (see lib/accounts.freeFourDigits), so a number never matches both.
   const sid = STUDENT_ID.exec(code);
-  let rows;
-  if (sid) {
-    // Student ID: only accounts whose every role is "student" may sign in this way.
-    const studentNo = `DAR-${sid[1].padStart(4, '0')}`;
+  let rows = [];
+  let kind = 'code';
+  if (sid || DIGITS.test(code)) {
+    const digits = sid ? sid[1].padStart(4, '0') : code;
+    const st = await findStudent(`DAR-${digits}`);
+    if (st) { rows = [st]; kind = 'student_id'; }
+  }
+  if (!rows.length && !sid) {
     ({ rows } = await db.query(
-      `SELECT u.id, u.status, u.mfa_enabled FROM users u
-        WHERE u.username = $1 AND u.deleted_at IS NULL
-          AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key = 'student')
-          AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key <> 'student')`,
-      [studentNo]));
-  } else {
-    ({ rows } = await db.query(
-      'SELECT id, status, mfa_enabled FROM users WHERE login_code_hash = $1 AND deleted_at IS NULL', [sha256(code)]));
+      'SELECT id, status, mfa_enabled FROM users WHERE login_code_hash = $1 AND deleted_at IS NULL', [loginCodeHash(code)]));
   }
   const u = rows[0];
   if (!u || u.status !== 'active') {
-    await audit(req, 'auth.login_failed', { entityType: 'user', entityId: u?.id, details: { kind: sid ? 'student_id' : 'code', reason: u ? 'disabled' : 'unknown_code' } });
+    await audit(req, 'auth.login_failed', { entityType: 'user', entityId: u?.id, details: { kind, reason: u ? 'disabled' : 'unknown_code' } });
     throw unauthorized('unknown_login_code');
   }
   const sec = (await getSettings()).security;
@@ -75,7 +86,7 @@ router.post('/login', loginLimiter, ah(async (req, res) => {
   const mfaState = u.mfa_enabled ? 'pending_verify' : mfaRequired ? 'pending_enroll' : 'none';
   await destroySession(req, res, { clearCookie: false }); // revoke any previous session; new cookie replaces it
   await createSession(res, req, u.id, mfaState);
-  await audit(req, 'auth.login', { entityType: 'user', entityId: u.id, actorId: u.id, details: { mfaState, kind: sid ? 'student_id' : 'code' } });
+  await audit(req, 'auth.login', { entityType: 'user', entityId: u.id, actorId: u.id, details: { mfaState, kind } });
   res.json({ ok: true, mfa: mfaState });
 }));
 

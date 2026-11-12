@@ -6,6 +6,7 @@
  */
 const config = require('../src/lib/config');
 const db = require('../src/lib/db');
+const { nextStudentNo } = require('../src/lib/accounts');
 const { migrate } = require('../src/migrate');
 const { hashPassword } = require('../src/lib/passwords');
 
@@ -19,15 +20,41 @@ const FIRST_EN = ['Aryan', 'Sara', 'Raz', 'Alan', 'Hevi', 'Dana', 'Shilan', 'Kar
 const LAST_EN = ['Kamal', 'Ahmed', 'Rebwar', 'Saman', 'Omar', 'Hasan', 'Mohammed', 'Ali', 'Jamal', 'Farhad'];
 
 /** Demo-only additions that may be missing from older demo databases (safe to run repeatedly). */
-// Demo-only staff sign-in codes, easy to type for testing (real accounts get random codes).
+// Demo-only fixed 4-digit sign-in codes so testers (and e2e/smoke.js) know them. Real accounts get random codes.
+const DEMO_CODES = {
+  'demo.admin': '4721', 'demo.principal': '3958', 'demo.registrar': '6204', 'demo.auditor': '8137',
+  'demo.teacher1': '2546', 'demo.teacher2': '7319', 'demo.teacher3': '5082', 'demo.teacher4': '9463', 'demo.teacher5': '1675', 'demo.teacher6': '6830',
+};
+const DEMO_FIRST_STUDENT = 'DAR-2741'; // the first demo student (used by e2e tests)
+
 async function demoLoginCodes() {
-  const { sha256, normalizeLoginCode } = require('../src/lib/crypto');
-  const users = (await db.query(`SELECT id, username FROM users WHERE username LIKE 'demo.%' AND login_code_hash IS NULL AND deleted_at IS NULL`)).rows;
-  for (const u of users) {
-    const code = `${u.username.slice(5).toUpperCase()}-DEMO`;
-    await db.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now() WHERE id = $1', [u.id, sha256(normalizeLoginCode(code))]);
-  }
-  if (users.length) console.log(`Demo sign-in codes set: ${users.map((u) => `${u.username.slice(5).toUpperCase()}-DEMO`).join(', ')}`);
+  const { loginCodeHash } = require('../src/lib/crypto');
+  if (!(await db.query("SELECT 1 FROM users WHERE username = 'demo.admin'")).rowCount) return;
+  await db.tx(async (c) => {
+    // A demo student whose ID collides with a demo staff code (or with the fixed first-student ID) gets a new random ID.
+    const reserved = [...Object.values(DEMO_CODES).map((d) => `DAR-${d}`), DEMO_FIRST_STUDENT];
+    const first = (await c.query('SELECT id, user_id, student_no FROM students ORDER BY id LIMIT 1')).rows[0];
+    const clash = await c.query('SELECT id, user_id FROM students WHERE student_no = ANY($1::text[]) AND id <> $2', [reserved, first?.id ?? 0]);
+    for (const r of clash.rows) {
+      const tmp = `TMP-${r.id}`;
+      await c.query('UPDATE students SET student_no = $2 WHERE id = $1', [r.id, tmp]);
+      await c.query('UPDATE users SET username = $2 WHERE id = $1', [r.user_id, tmp]);
+    }
+    for (const r of clash.rows) {
+      let no; do { no = await nextStudentNo(c); } while (reserved.includes(no));
+      await c.query('UPDATE students SET student_no = $2 WHERE id = $1', [r.id, no]);
+      await c.query('UPDATE users SET username = $2 WHERE id = $1', [r.user_id, no]);
+    }
+    if (first && first.student_no !== DEMO_FIRST_STUDENT) {
+      await c.query('UPDATE students SET student_no = $2 WHERE id = $1', [first.id, DEMO_FIRST_STUDENT]);
+      await c.query('UPDATE users SET username = $2 WHERE id = $1', [first.user_id, DEMO_FIRST_STUDENT]);
+    }
+    for (const [username, code] of Object.entries(DEMO_CODES)) {
+      await c.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now() WHERE username = $1 AND login_code_hash IS DISTINCT FROM $2',
+        [username, loginCodeHash(code)]);
+    }
+  });
+  console.log(`Demo sign-in: first student ${DEMO_FIRST_STUDENT}; staff codes ${Object.entries(DEMO_CODES).map(([u, d]) => `${u.slice(5)}=${d}`).join(', ')}`);
 }
 
 async function topUpDemo() {
@@ -105,7 +132,7 @@ async function main() {
     }
     const studentRole = await role('student');
     for (let i = 0; i < n; i++) {
-      const no = (await c.query(`SELECT 'DAR-' || lpad(nextval('student_no_seq')::text,4,'0') AS no`)).rows[0].no;
+      const no = await nextStudentNo(c);
       const fi = i % FIRST.length, li = (i * 7) % LAST.length;
       const u = await c.query(`INSERT INTO users (username, full_name, password_hash, must_change_password) VALUES ($1,$2,$3,false) RETURNING id`,
         [no, `${FIRST[fi]} ${LAST[li]}`, hash]);

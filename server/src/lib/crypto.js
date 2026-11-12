@@ -36,7 +36,15 @@ function generatePassword(length = 10) {
   return out;
 }
 
-/** Staff sign-in code: 10 characters from an unambiguous 32-letter alphabet (50 bits), shown as XXXXX-XXXXX. */
+/**
+ * Lookup hash for a sign-in code. Keyed (HMAC with a key derived from APP_ENCRYPTION_KEY) so that a copy of
+ * the database alone cannot be turned back into 4-digit codes by trying all 10,000 values.
+ */
+function loginCodeHash(code) {
+  return crypto.createHmac('sha256', key).update(`login-code:${normalizeLoginCode(code)}`).digest('hex');
+}
+
+/** (Unused since 4-digit codes) Staff sign-in code: 10 characters from an unambiguous 32-letter alphabet (50 bits), shown as XXXXX-XXXXX. */
 function generateLoginCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let out = '';
@@ -51,4 +59,4 @@ function normalizeLoginCode(code) {
     .toUpperCase().replace(/[\s\-_]/g, '');
 }
 
-module.exports = { randomToken, sha256, encrypt, decrypt, safeEqual, generatePassword, generateLoginCode, normalizeLoginCode };
+module.exports = { randomToken, sha256, encrypt, decrypt, safeEqual, generatePassword, generateLoginCode, normalizeLoginCode, loginCodeHash };
