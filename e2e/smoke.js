@@ -95,6 +95,7 @@ async function shot(page, name, path) {
     await page.click('#main .grid .card a.btn-primary'); await page.waitForLoadState('networkidle');
     await page.click('.page-actions .btn-primary');
     await page.fill('#nsf input[inputmode=numeric]', String(3 + (Date.now() % 50))); // unique week per run
+    await page.fill('#nsf input[maxlength="100"]', `E2E ${Date.now()}`); // unique title so repeated runs never collide
     await page.click('button[form=nsf]');
     await page.waitForSelector('.score-input');
     const inputs = await page.$$('.score-input');
