@@ -35,9 +35,10 @@ export function GradesPage() {
   const sectionId = sp.get('sectionId') || '';
   const subjectId = sp.get('subjectId') || '';
   const termId = sp.get('termId') || '';
+  const status = sp.get('status') || '';
   const page = Number(sp.get('page') || 1);
   const set = (k, v) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); if (k !== 'page') n.delete('page'); setSp(n, { replace: true }); };
-  const list = useApi('/assessments', { sectionId, subjectId, termId, yearId: year?.id, page, pageSize: 25 }, { skip: !year });
+  const list = useApi('/assessments', { sectionId, subjectId, termId, status, yearId: year?.id, page, pageSize: 25 }, { skip: !year });
   const [creating, setCreating] = useState(false);
   const allowedSubjects = useMemo(() => {
     const all = (subjects.data?.items || []).filter((s) => s.is_active);
@@ -48,7 +49,7 @@ export function GradesPage() {
   const canCreate = sectionId && subjectId && (can('grades.manage_all') || allowedSubjects.some((s) => String(s.id) === subjectId));
   return (
     <>
-      <PageHead title={t('gradesTitle')} sub={t('gradesSub')}>
+      <PageHead title={t('navGradeSheets')} sub={t('gradesHelp')}>
         <button type="button" className="btn btn-primary" disabled={!canCreate} onClick={() => setCreating(true)} title={!canCreate ? t('selectClassSubject') : undefined}><Plus size={18} />{t('newAssessment')}</button>
       </PageHead>
       <div className="card">
@@ -56,6 +57,7 @@ export function GradesPage() {
           <Field label={t('term')}>{(p) => <select {...p} className="select" value={termId} onChange={(e) => set('termId', e.target.value)}><option value="">{t('all')}</option>{(terms.data?.items || []).map((x) => <option key={x.id} value={x.id}>{pick(x)}</option>)}</select>}</Field>
           <Field label={t('section')}>{(p) => <select {...p} className="select" value={sectionId} onChange={(e) => set('sectionId', e.target.value)}><option value="">{t('all')}</option>{(sections.data?.items || []).map((s) => <option key={s.id} value={s.id}>{sectionLabel(t, fmtNum, s)}</option>)}</select>}</Field>
           <Field label={t('subject')}>{(p) => <select {...p} className="select" value={subjectId} onChange={(e) => set('subjectId', e.target.value)}><option value="">{t('all')}</option>{allowedSubjects.map((s) => <option key={s.id} value={s.id}>{pick(s)}</option>)}</select>}</Field>
+          <Field label={t('status')}>{(p) => <select {...p} className="select" value={status} onChange={(e) => set('status', e.target.value)}><option value="">{t('all')}</option>{['draft', 'returned', 'submitted', 'approved', 'published'].map((x) => <option key={x} value={x}>{t(`gs_${x}`)}</option>)}</select>}</Field>
         </div>
         {list.error ? <ErrorState error={list.error} onRetry={list.reload} /> : (
           <div className="table-wrap"><table className="table">

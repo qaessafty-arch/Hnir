@@ -11,19 +11,12 @@ const { getSettings, invalidateSettings } = require('../lib/settings');
 
 const router = express.Router();
 
-// ---------- Portal (students / parents) ----------
-router.get('/portal/me', requirePerm('self.grades', 'self.children'), ah(async (req, res) => {
+// ---------- Student portal ----------
+router.get('/portal/me', requirePerm('self.grades'), ah(async (req, res) => {
   const children = [];
   if (has(req, 'self.grades')) {
     const r = await db.query('SELECT id, student_no, full_name_ckb, full_name_en FROM students WHERE user_id = $1', [req.user.id]);
     children.push(...r.rows.map((x) => ({ ...x, self: true })));
-  }
-  if (has(req, 'self.children')) {
-    const r = await db.query(
-      `SELECT s.id, s.student_no, s.full_name_ckb, s.full_name_en, g.relationship
-         FROM guardian_student_relationships g JOIN parents p ON p.id = g.parent_id JOIN students s ON s.id = g.student_id
-        WHERE p.user_id = $1 AND g.verified_at IS NOT NULL ORDER BY s.full_name_ckb`, [req.user.id]);
-    children.push(...r.rows);
   }
   res.json({ students: children });
 }));

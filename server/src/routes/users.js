@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(requirePerm('users.manage', 'roles.manage'));
 
 const PRIVILEGED_ASSIGN = ['super_admin', 'principal'];
-const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'student', 'parent', 'auditor'];
+const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'student', 'auditor'];
 
 async function rolesOf(userId) {
   const r = await db.query('SELECT r.key FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1', [userId]);
@@ -65,7 +65,6 @@ router.post('/', ah(async (req, res) => {
     if (b.roles.includes('teacher')) {
       await c.query('INSERT INTO teachers (user_id, staff_no, phone) VALUES ($1,$2,$3)', [acct.userId, await nextStaffNo(c), b.phone]);
     }
-    if (b.roles.includes('parent')) await c.query('INSERT INTO parents (user_id, phone) VALUES ($1,$2)', [acct.userId, b.phone]);
     await audit(req, 'user.create', { entityType: 'user', entityId: acct.userId, details: { username: b.username, roles: b.roles }, client: c });
     return { id: acct.userId, username: b.username, initial_password: acct.initialPassword };
   });
@@ -97,7 +96,6 @@ router.put('/:id/roles', ah(async (req, res) => {
       await c.query(`INSERT INTO teachers (user_id, staff_no) SELECT $1, 'STF-' || lpad(nextval('staff_no_seq')::text, 4, '0')
                       WHERE NOT EXISTS (SELECT 1 FROM teachers WHERE user_id = $1)`, [uid]);
     }
-    if (b.roles.includes('parent')) await c.query('INSERT INTO parents (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING', [uid]);
     // A role change takes effect immediately: force re-login.
     await c.query('DELETE FROM sessions WHERE user_id = $1', [uid]);
     await audit(req, 'user.roles', { entityType: 'user', entityId: uid, details: { before: before.rows.map((r) => r.key), after: b.roles }, client: c });
@@ -143,39 +141,6 @@ router.post('/:id/mfa-reset', ah(async (req, res) => {
     await c.query('DELETE FROM sessions WHERE user_id = $1', [uid]);
     await audit(req, 'user.mfa_reset', { entityType: 'user', entityId: uid, client: c });
   });
-  res.json({ ok: true });
-}));
-
-// ---------- Parent ↔ student links (verified by staff) ----------
-async function parentIdOf(userId) {
-  const r = await db.query('SELECT id FROM parents WHERE user_id = $1', [userId]);
-  if (!r.rowCount) throw badRequest('user_is_not_a_parent');
-  return r.rows[0].id;
-}
-router.get('/:id/children', ah(async (req, res) => {
-  const pid = await parentIdOf(parse(id, req.params.id));
-  const { rows } = await db.query(
-    `SELECT s.id, s.student_no, s.full_name_ckb, s.full_name_en, g.relationship, g.verified_at
-       FROM guardian_student_relationships g JOIN students s ON s.id = g.student_id WHERE g.parent_id = $1 ORDER BY s.full_name_ckb`, [pid]);
-  res.json({ items: rows });
-}));
-router.post('/:id/children', ah(async (req, res) => {
-  const uid = parse(id, req.params.id);
-  const b = parse(z.object({ student_id: id, relationship: z.enum(['father', 'mother', 'guardian', 'other']).default('guardian') }), req.body);
-  const pid = await parentIdOf(uid);
-  await db.query(
-    `INSERT INTO guardian_student_relationships (parent_id, student_id, relationship, verified_at, verified_by)
-     VALUES ($1,$2,$3, now(), $4) ON CONFLICT (parent_id, student_id) DO UPDATE SET relationship = EXCLUDED.relationship,
-       verified_at = now(), verified_by = EXCLUDED.verified_by`, [pid, b.student_id, b.relationship, req.user.id]).catch(pgConflict);
-  await audit(req, 'parent.link', { entityType: 'user', entityId: uid, details: b });
-  res.status(201).json({ ok: true });
-}));
-router.delete('/:id/children/:studentId', ah(async (req, res) => {
-  const uid = parse(id, req.params.id);
-  const sid = parse(id, req.params.studentId);
-  const pid = await parentIdOf(uid);
-  await db.query('DELETE FROM guardian_student_relationships WHERE parent_id=$1 AND student_id=$2', [pid, sid]);
-  await audit(req, 'parent.unlink', { entityType: 'user', entityId: uid, details: { student_id: sid } });
   res.json({ ok: true });
 }));
 

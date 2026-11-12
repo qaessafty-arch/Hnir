@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, GraduationCap, School, BookOpen, ClipboardList, Table2, FileBarChart, CalendarRange,
-  UserCog, ScrollText, Settings, Menu, Bell, Globe, LogOut, ShieldCheck, Upload, Link2, UserRound,
+  LayoutDashboard, Users, GraduationCap, School, ClipboardList, ClipboardCheck, BarChart3,
+  UserCog, Settings, Menu, Bell, Globe, LogOut, ShieldCheck, UserRound,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
@@ -12,28 +12,19 @@ import InstallButton from './InstallButton';
 
 export const NAV = [
   { section: 'navOverview', items: [
-    { to: '/', key: 'navDashboard', icon: LayoutDashboard, perms: ['dashboard.school', 'grades.enter'], end: true },
+    { to: '/', key: 'navHome', icon: LayoutDashboard, perms: ['dashboard.school', 'grades.enter'], end: true },
     { to: '/portal', key: 'navMyGrades', icon: GraduationCap, perms: ['self.grades'] },
-    { to: '/portal', key: 'navChildren', icon: Users, perms: ['self.children'], hideIf: ['self.grades'] },
-  ] },
-  { section: 'navAcademic', items: [
-    { to: '/students', key: 'navStudents', icon: GraduationCap, perms: ['students.read'] },
-    { to: '/students/import', key: 'navImport', icon: Upload, perms: ['students.import'] },
-    { to: '/teachers', key: 'navTeachers', icon: Users, perms: ['teachers.read'] },
-    { to: '/sections', key: 'navClasses', icon: School, perms: ['academic.manage'] },
-    { to: '/subjects', key: 'navSubjects', icon: BookOpen, perms: ['academic.manage'] },
-    { to: '/assignments', key: 'navAssignments', icon: Link2, perms: ['assignments.manage'] },
-    { to: '/years', key: 'navYears', icon: CalendarRange, perms: ['academic.manage'] },
   ] },
   { section: 'navGrades', items: [
-    { to: '/grades', key: 'navGrades', icon: ClipboardList, perms: ['grades.enter', 'grades.manage_all', 'grades.approve'], end: true },
-    { to: '/grades/overview', key: 'navGradeOverview', icon: Table2, perms: ['grades.read_all', 'grades.enter'] },
-    { to: '/reports', key: 'navReports', icon: FileBarChart, perms: ['reports.school', 'reports.class'] },
+    { to: '/approvals', key: 'navApprovals', icon: ClipboardCheck, perms: ['grades.approve'], badge: 'approvals' },
+    { to: '/grades', key: 'navGradeSheets', icon: ClipboardList, perms: ['grades.enter', 'grades.manage_all'], end: true },
+    { to: '/students', key: 'navStudents', icon: Users, perms: ['students.read'] },
+    { to: '/results', key: 'navResults', icon: BarChart3, perms: ['reports.school', 'reports.class'] },
   ] },
   { section: 'navAdmin', items: [
-    { to: '/users', key: 'navUsers', icon: UserCog, perms: ['users.manage', 'roles.manage'] },
-    { to: '/audit', key: 'navAudit', icon: ScrollText, perms: ['audit.read'] },
-    { to: '/settings', key: 'navSettings', icon: Settings, perms: ['system.settings'] },
+    { to: '/staff', key: 'navStaff', icon: UserCog, perms: ['teachers.read', 'users.manage', 'assignments.manage'] },
+    { to: '/setup', key: 'navSetup', icon: School, perms: ['academic.manage'] },
+    { to: '/system', key: 'navSystem', icon: Settings, perms: ['system.settings', 'audit.read'] },
     { to: '/account', key: 'navAccount', icon: ShieldCheck, perms: null },
   ] },
 ];
@@ -74,12 +65,18 @@ function Notifications() {
 }
 
 export default function Layout() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, setLang, fmtNum } = useI18n();
   const { user, can, logout } = useAuth();
+  const [pending, setPending] = useState(0);
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const nav = useNavigate();
   useEffect(() => setOpen(false), [loc.pathname]);
+  // Count of sheets waiting for approval, shown next to "Approvals" in the menu.
+  useEffect(() => {
+    if (!can('grades.approve')) return;
+    api('/analytics/attention').then((r) => setPending((r.items.awaiting_approval || 0) + (r.items.approved_not_published || 0))).catch(() => {});
+  }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   const switchLang = () => {
     const next = lang === 'ckb' ? 'en' : 'ckb';
     setLang(next);
@@ -97,13 +94,14 @@ export default function Layout() {
         </div>
         <nav className="nav">
           {NAV.map((sec) => {
-            const items = sec.items.filter((i) => (!i.perms || can(...i.perms)) && !(i.hideIf && can(...i.hideIf)));
+            const items = sec.items.filter((i) => !i.perms || can(...i.perms));
             if (!items.length) return null;
             return (
               <div key={sec.section}>
                 <div className="nav-section">{t(sec.section)}</div>
                 {items.map((i) => (
-                  <NavLink key={i.key} to={i.to} end={i.end}><i.icon size={18} aria-hidden="true" />{t(i.key)}</NavLink>
+                  <NavLink key={i.key} to={i.to} end={i.end}><i.icon size={18} aria-hidden="true" />{t(i.key)}
+                    {i.badge === 'approvals' && pending > 0 && <span className="badge badge-warn" style={{ marginInlineStart: 'auto' }}>{fmtNum(pending)}</span>}</NavLink>
                 ))}
               </div>
             );

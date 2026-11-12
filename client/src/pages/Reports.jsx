@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Printer, Download, Search, FileText, GraduationCap } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
@@ -9,7 +9,7 @@ import Logo from '../components/Logo';
 import { BandBadge, Code, Empty, ErrorState, Field, Loading, PageHead, Pagination, Progress, SheetStatus, SkeletonRows, SortHeader, StudentAvatar, useToast } from '../components/ui';
 import { sectionLabel } from './Students';
 
-// ---------------- Report card (shared by staff, student and parent views) ----------------
+// ---------------- Report card (shared by staff and student views) ----------------
 export function ReportCard({ studentId, showControls = true }) {
   const { t, fmtNum, fmtPct, fmtDate, fmtDateTime, pick, errorText } = useI18n();
   const toast = useToast();
@@ -95,7 +95,7 @@ export function ReportCard({ studentId, showControls = true }) {
         )}
         <p className="muted small" style={{ marginBlockStart: 14 }}>{data.policy.mode === 'unweighted' ? t('formulaNoteUnweighted') : t('formulaNote')}</p>
         <div className="signatures">
-          <div>{t('signatureTeacher')}</div><div>{t('signaturePrincipal')}</div><div>{t('signatureParent')}</div>
+          <div>{t('signatureTeacher')}</div><div>{t('signaturePrincipal')}</div>
         </div>
         <p className="muted small" style={{ marginBlockStart: 16 }}>{t('generatedOn')}: {fmtDateTime(data.generated_at)}</p>
       </article>
@@ -111,72 +111,67 @@ export function StudentReportPage() {
 }
 
 // ---------------- Reports landing ----------------
-export function ReportsPage() {
+/** Class results table: one row per student, one column per subject (embedded in Results). */
+export function ClassSummary({ initialSectionId }) {
   const { t, fmtNum, pick, errorText } = useI18n();
-  const { can } = useAuth();
   const toast = useToast();
-  const [sp, setSp] = useSearchParams();
-  const tab = sp.get('tab') || 'section';
   const { current: year } = useYears();
   const sections = useApi('/academic/sections', { yearId: year?.id }, { skip: !year });
   const terms = useApi('/academic/terms', { yearId: year?.id }, { skip: !year });
-  const [sectionId, setSectionId] = useState('');
+  const [sectionId, setSectionId] = useState(initialSectionId ? String(initialSectionId) : '');
   const [termId, setTermId] = useState('');
   useEffect(() => { if (!sectionId && sections.data?.items[0]) setSectionId(String(sections.data.items[0].id)); }, [sections.data, sectionId]);
-  const rep = useApi(`/reports/section/${sectionId}`, { termId }, { skip: !sectionId || tab !== 'section' });
-  const [q, setQ] = useState('');
-  const dq = useDebounced(q);
-  const students = useApi('/students', { q: dq, pageSize: 15 }, { skip: tab !== 'student' || !can('students.read') });
+  const rep = useApi(`/reports/section/${sectionId}`, { termId }, { skip: !sectionId });
   const exportCsv = () => download(`/reports/section/${sectionId}`, { termId, format: 'csv' }, 'class-summary.csv').catch((e) => toast(errorText(e), 'bad'));
   return (
-    <>
-      <PageHead title={t('reportsTitle')} sub={t('reportsSub')} />
-      <div className="tabs no-print" role="tablist">
-        <button type="button" role="tab" className="tab" aria-selected={tab === 'section'} onClick={() => setSp({ tab: 'section' })}>{t('sectionReport')}</button>
-        {can('students.read') && <button type="button" role="tab" className="tab" aria-selected={tab === 'student'} onClick={() => setSp({ tab: 'student' })}>{t('studentReport')}</button>}
+    <div className="card">
+      <div className="filters">
+        <Field label={t('section')}>{(p) => <select {...p} className="select" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>{(sections.data?.items || []).map((s) => <option key={s.id} value={s.id}>{sectionLabel(t, fmtNum, s)}</option>)}</select>}</Field>
+        <Field label={t('term')}>{(p) => <select {...p} className="select" value={termId} onChange={(e) => setTermId(e.target.value)}><option value="">{t('wholeYear')}</option>{(terms.data?.items || []).map((x) => <option key={x.id} value={x.id}>{pick(x)}</option>)}</select>}</Field>
+        <div className="row" style={{ marginInlineStart: 'auto' }}>
+          <button type="button" className="btn btn-secondary" disabled={!sectionId} onClick={exportCsv}><Download size={16} />{t('exportCsv')}</button>
+          <button type="button" className="btn btn-primary" onClick={() => window.print()}><Printer size={16} />{t('print')}</button>
+        </div>
       </div>
-      {tab === 'section' ? (
-        <div className="card">
-          <div className="filters">
-            <Field label={t('section')}>{(p) => <select {...p} className="select" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>{(sections.data?.items || []).map((s) => <option key={s.id} value={s.id}>{sectionLabel(t, fmtNum, s)}</option>)}</select>}</Field>
-            <Field label={t('term')}>{(p) => <select {...p} className="select" value={termId} onChange={(e) => setTermId(e.target.value)}><option value="">{t('wholeYear')}</option>{(terms.data?.items || []).map((x) => <option key={x.id} value={x.id}>{pick(x)}</option>)}</select>}</Field>
-            <div className="row" style={{ marginInlineStart: 'auto' }}>
-              <button type="button" className="btn btn-secondary" disabled={!sectionId} onClick={exportCsv}><Download size={16} />{t('exportCsv')}</button>
-              <button type="button" className="btn btn-primary" onClick={() => window.print()}><Printer size={16} />{t('print')}</button>
-            </div>
-          </div>
-          {rep.error ? <ErrorState error={rep.error} onRetry={rep.reload} /> : (
-            <div className="table-wrap"><table className="table">
-              <thead><tr><th>{t('name')}</th>{(rep.data?.subjects || []).map((s) => <th key={s.id}>{pick(s)}</th>)}<th>{t('overall')}</th><th>{t('performance')}</th></tr></thead>
-              {rep.loading && !rep.data ? <SkeletonRows cols={6} /> : (
-                <tbody>
-                  {rep.data?.items.length === 0 && <tr><td colSpan={20}><Empty title={t('noStudents')} /></td></tr>}
-                  {rep.data?.items.map((i) => (
-                    <tr key={i.id}>
-                      <td><Link to={`/reports/student/${i.id}`}>{i.full_name_ckb}</Link><div className="small"><Code>{i.student_no}</Code></div></td>
-                      {rep.data.subjects.map((s) => { const v = i.by_subject[s.id]; return <td key={s.id} className="num" style={{ color: v != null && v < s.pass_mark_percent ? 'var(--bad)' : undefined, fontWeight: v != null && v < s.pass_mark_percent ? 700 : undefined }}>{v == null ? '—' : fmtNum(v)}</td>; })}
-                      <td className="num" style={{ fontWeight: 700 }}>{i.overall_percent == null ? '—' : fmtNum(i.overall_percent)}</td>
-                      <td><BandBadge band={i.overall_band} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              )}
-            </table></div>
+      {rep.error ? <ErrorState error={rep.error} onRetry={rep.reload} /> : (
+        <div className="table-wrap"><table className="table">
+          <thead><tr><th>{t('name')}</th>{(rep.data?.subjects || []).map((s) => <th key={s.id}>{pick(s)}</th>)}<th>{t('overall')}</th><th>{t('performance')}</th></tr></thead>
+          {rep.loading && !rep.data ? <SkeletonRows cols={6} /> : (
+            <tbody>
+              {rep.data?.items.length === 0 && <tr><td colSpan={20}><Empty title={t('noStudents')} /></td></tr>}
+              {rep.data?.items.map((i) => (
+                <tr key={i.id}>
+                  <td><Link to={`/reports/student/${i.id}`}>{i.full_name_ckb}</Link><div className="small"><Code>{i.student_no}</Code></div></td>
+                  {rep.data.subjects.map((s) => { const v = i.by_subject[s.id]; const low = v != null && v < s.pass_mark_percent; return <td key={s.id} className="num" style={{ color: low ? 'var(--bad)' : undefined, fontWeight: low ? 700 : undefined }}>{v == null ? '—' : fmtNum(v)}</td>; })}
+                  <td className="num" style={{ fontWeight: 700 }}>{i.overall_percent == null ? '—' : fmtNum(i.overall_percent)}</td>
+                  <td><BandBadge band={i.overall_band} /></td>
+                </tr>
+              ))}
+            </tbody>
           )}
-        </div>
-      ) : (
-        <div className="card">
-          <div className="filters"><Field label={t('search')} className="grow">{(p) => <input {...p} className="input" type="search" placeholder={t('searchStudents')} value={q} onChange={(e) => setQ(e.target.value)} />}</Field></div>
-          <div className="table-wrap"><table className="table"><tbody>
-            {(students.data?.items || []).map((s) => (
-              <tr key={s.id}><td><div className="cell-person"><StudentAvatar student={s} /><div><strong>{s.full_name_ckb}</strong><small><Code>{s.student_no}</Code></small></div></div></td>
-                <td className="nowrap">{s.grade_level ? sectionLabel(t, fmtNum, s) : '—'}</td>
-                <td><div className="actions"><Link className="btn btn-secondary btn-sm" to={`/reports/student/${s.id}`}><FileText size={15} />{t('reportCard')}</Link></div></td></tr>
-            ))}
-          </tbody></table></div>
-        </div>
+        </table></div>
       )}
-    </>
+    </div>
+  );
+}
+
+/** Find a student and open their report card (embedded in Results). */
+export function ReportCardSearch() {
+  const { t, fmtNum } = useI18n();
+  const [q, setQ] = useState('');
+  const dq = useDebounced(q);
+  const students = useApi('/students', { q: dq, pageSize: 15 });
+  return (
+    <div className="card">
+      <div className="filters"><Field label={t('search')} className="grow">{(p) => <input {...p} className="input" type="search" placeholder={t('searchStudents')} value={q} onChange={(e) => setQ(e.target.value)} />}</Field></div>
+      <div className="table-wrap"><table className="table"><tbody>
+        {(students.data?.items || []).map((s) => (
+          <tr key={s.id}><td><div className="cell-person"><StudentAvatar student={s} /><div><strong>{s.full_name_ckb}</strong><small><Code>{s.student_no}</Code></small></div></div></td>
+            <td className="nowrap">{s.grade_level ? sectionLabel(t, fmtNum, s) : '—'}</td>
+            <td><div className="actions"><Link className="btn btn-secondary btn-sm" to={`/reports/student/${s.id}`}><FileText size={15} />{t('reportCard')}</Link></div></td></tr>
+        ))}
+      </tbody></table></div>
+    </div>
   );
 }
 
@@ -250,22 +245,13 @@ export function GradeOverviewPage() {
   );
 }
 
-// ---------------- Student / parent portal ----------------
+// ---------------- Student portal ----------------
 export function PortalPage() {
   const { t } = useI18n();
   const { data, loading, error, reload } = useApi('/portal/me');
-  const [sel, setSel] = useState(null);
   if (loading && !data) return <Loading />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
-  const list = data.students;
-  const current = sel || list[0]?.id;
-  if (!list.length) return <><PageHead title={t('navChildren')} /><div className="card"><Empty title={t('noGrades')} /></div></>;
-  return (
-    <>
-      <PageHead title={list.length === 1 && list[0].self ? t('navMyGrades') : t('navChildren')}>
-        {list.length > 1 && <Field label={t('chooseChild')}>{(p) => <select {...p} className="select" value={current} onChange={(e) => setSel(Number(e.target.value))}>{list.map((s) => <option key={s.id} value={s.id}>{s.full_name_ckb}</option>)}</select>}</Field>}
-      </PageHead>
-      <ReportCard key={current} studentId={current} />
-    </>
-  );
+  const me = data.students[0];
+  if (!me) return <><PageHead title={t('navMyGrades')} /><div className="card"><Empty title={t('noGrades')} /></div></>;
+  return <><PageHead title={t('navMyGrades')} /><ReportCard studentId={me.id} /></>;
 }

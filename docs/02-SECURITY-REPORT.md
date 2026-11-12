@@ -11,7 +11,7 @@ Status meanings:
 
 | Asset | Threat | Main controls |
 |---|---|---|
-| Student grades and personal data | A student or parent viewing other students; a teacher viewing other classes | Object-level authorization on every read (`lib/access.js`); a 404 response for both not-found and not-allowed, so IDs cannot be enumerated |
+| Student grades and personal data | A student viewing other students; a teacher viewing other classes | Object-level authorization on every read (`lib/access.js`); a 404 response for both not-found and not-allowed, so IDs cannot be enumerated |
 | Grade integrity | Unauthorised or silent changes; lost updates | RBAC, workflow states, optimistic locking, history tables, append-only audit log |
 | Staff accounts | Credential stuffing or guessing | argon2id, lockout, rate limits, TOTP MFA for privileged roles |
 | Sessions | Theft, fixation, CSRF | HttpOnly + SameSite=Strict cookie, `__Host-` prefix and `Secure` in production, rotation on login / MFA / password change, CSRF token + Origin check |
@@ -35,7 +35,7 @@ Status meanings:
 | 12 | CSRF | Synchronizer token (`X-CSRF-Token`, kept in memory only) on every non-GET request, plus an `Origin` check, plus SameSite=Strict | ✅ | CSRF test (missing token, forged Origin) |
 | 13 | XSS | React auto-escaping, no `dangerouslySetInnerHTML`, CSP `script-src 'self'`, no inline scripts, `object-src 'none'`, `frame-ancestors 'none'` | ✅ | XSS test; Playwright run found no CSP violations (the build sets `assetsInlineLimit: 0` so fonts are not `data:` URIs) |
 | 14 | SQL injection | Only parameterised queries. Sort columns come from server-side allow-lists. `LIKE` wildcards are escaped | ✅ | SQLi test |
-| 15 | IDOR / BOLA | `assertCanViewStudent` and `assertAssessmentAccess` run on every object route; teachers are limited to their own section+subject, parents to verified links, students to themselves | ✅ | IDOR tests (report, profile, photo, CSV for each other ID) |
+| 15 | IDOR / BOLA | `assertCanViewStudent` and `assertAssessmentAccess` run on every object route; teachers are limited to their own section+subject, students to themselves | ✅ | IDOR tests (report, profile, photo, CSV for each other ID) |
 | 16 | Least privilege | Permission-based RBAC (25 permissions, 7 roles). Principals cannot grant or modify super-admin/principal accounts. Teachers cannot approve their own sheets. Auditors are read-only | ✅ | authorization tests |
 | 17 | Server-side validation | zod schemas on every body and query; DB `CHECK` / `UNIQUE` / FK constraints as a second layer | ✅ | validation tests |
 | 18 | File uploads | 2 MB limit, magic-byte allow-list (JPEG/PNG/WebP), random name, stored outside the web root, served via an authorized route with `nosniff` and `Content-Disposition: inline` | ✅ | upload tests |
@@ -53,31 +53,32 @@ Status meanings:
 
 ✔ = permitted. All checks are enforced by the server (`requirePerm` + object-level checks), not only by hiding buttons.
 
-| Permission | Super Admin | Principal | Registrar | Teacher | Student | Parent | Auditor |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| system.settings (grading & security policy) | ✔ | | | | | | |
-| roles.manage (assign admin roles) | ✔ | | | | | | |
-| users.manage (staff/parent accounts) | ✔ | ✔¹ | | | | | |
-| academic.manage (years, terms, sections, subjects) | ✔ | ✔ | | | | | |
-| backups.manage (view backup status) | ✔ | | | | | | |
-| dashboard.school | ✔ | ✔ | ✔ | | | | ✔ |
-| students.read | ✔ | ✔ | ✔ | | | | ✔ |
-| students.write / archive / import | ✔ | ✔ | ✔ | | | | |
-| teachers.read | ✔ | ✔ | ✔ | | | | ✔ |
-| teachers.write, assignments.manage | ✔ | ✔ | | | | | |
-| grades.enter (own section+subject only) | | | | ✔ | | | |
-| grades.manage_all (any sheet before publication) | ✔ | ✔ | | | | | |
-| grades.read_all | ✔ | ✔ | | | | | ✔ |
-| grades.approve / publish | ✔ | ✔ | | | | | |
-| grades.correct (published, reason required) | ✔ | ✔ | | | | | |
-| reports.school | ✔ | ✔ | | | | | ✔ |
-| reports.class (own classes, own subjects) | | | | ✔ | | | |
-| exports.csv | ✔ | ✔ | ✔ | (own classes) | own report | child report | |
-| audit.read | ✔ | ✔ | | | | | ✔ |
-| self.grades (own published grades) | | | | | ✔ | | |
-| self.children (verified children's published grades) | | | | | | ✔ | |
+| Permission | Super Admin | Principal | Registrar | Teacher | Student | Auditor |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| system.settings (grading & security policy) | ✔ | | | | | |
+| roles.manage (assign admin roles) | ✔ | | | | | |
+| users.manage (staff accounts) | ✔ | ✔¹ | | | | |
+| academic.manage (years, terms, sections, subjects) | ✔ | ✔ | | | | |
+| backups.manage (view backup status) | ✔ | | | | | |
+| dashboard.school | ✔ | ✔ | ✔ | | | ✔ |
+| students.read | ✔ | ✔ | ✔ | | | ✔ |
+| students.write / archive / import | ✔ | ✔ | ✔ | | | |
+| teachers.read | ✔ | ✔ | ✔ | | | ✔ |
+| teachers.write, assignments.manage | ✔ | ✔ | | | | |
+| grades.enter (own section+subject only) | | | | ✔ | | |
+| grades.manage_all (any sheet before publication) | ✔ | ✔ | | | | |
+| grades.read_all | ✔ | ✔ | | | | ✔ |
+| grades.approve / publish | ✔ | ✔ | | | | |
+| grades.correct (published, reason required) | ✔ | ✔ | | | | |
+| reports.school | ✔ | ✔ | | | | ✔ |
+| reports.class (own classes, own subjects) | | | | ✔ | | |
+| exports.csv | ✔ | ✔ | ✔ | (own classes) | own report | |
+| audit.read | ✔ | ✔ | | | | ✔ |
+| self.grades (own published grades) | | | | | ✔ | |
 
 ¹ Principals cannot create, modify, disable or reset super-admin or principal accounts.
+
+**Removed:** the Parent/Guardian role (and its tables) was removed at the school's request (migration `003_remove_parent_role.sql`). Former parent-only accounts are disabled and soft-deleted, kept for audit history.
 
 ## 2.4 Known limitations and recommendations (not done)
 

@@ -13,12 +13,6 @@ async function assertCanViewStudent(req, studentId) {
   const st = rows[0];
   if (has(req, 'students.read') || has(req, 'grades.read_all')) return { publishedOnly: false, student: st };
   if (has(req, 'self.grades') && st.user_id === req.user.id) return { publishedOnly: true, student: st };
-  if (has(req, 'self.children')) {
-    const r = await db.query(
-      `SELECT 1 FROM guardian_student_relationships g JOIN parents p ON p.id = g.parent_id
-        WHERE p.user_id = $1 AND g.student_id = $2 AND g.verified_at IS NOT NULL`, [req.user.id, studentId]);
-    if (r.rowCount) return { publishedOnly: true, student: st };
-  }
   if (has(req, 'grades.enter')) {
     const r = await db.query(
       `SELECT 1 FROM teacher_assignments ta JOIN teachers t ON t.id = ta.teacher_id

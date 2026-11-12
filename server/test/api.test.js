@@ -144,13 +144,12 @@ test.describe('authorization and student isolation', () => {
     assert.strictEqual((await s.get(`/api/assessments/${asmId}`)).status, 403);
   });
 
-  test('parent sees only verified linked children', async () => {
-    const p = await h.login('parent1');
-    const me = await p.get('/api/portal/me');
-    assert.deepStrictEqual(me.body.students.map((x) => x.id), [ids.students[0]]);
-    assert.strictEqual((await p.get(`/api/reports/student/${ids.students[0]}`)).status, 200);
-    assert.strictEqual((await p.get(`/api/reports/student/${ids.students[1]}`)).status, 404); // unverified link
-    assert.strictEqual((await p.get(`/api/reports/student/${ids.students[2]}`)).status, 404);
+  test('parent role no longer exists', async () => {
+    const r = await h.db.query("SELECT count(*)::int n FROM roles WHERE key = 'parent'");
+    assert.strictEqual(r.rows[0].n, 0);
+    const p = await h.login('principal1');
+    const bad = await p.post('/api/users').send({ username: 'someparent', full_name: 'X', roles: ['parent'] });
+    assert.strictEqual(bad.status, 400);
   });
 
   test('teacher is limited to assigned section + subject', async () => {
@@ -401,5 +400,52 @@ test.describe('rate limiting', () => {
       const other = await h.request().post('/api/auth/login').send({ username: 'someone-else', password: 'x' });
       assert.strictEqual(other.status, 401);
     } finally { delete process.env.TEST_RATE_LIMIT; }
+  });
+});
+
+test.describe('analysis and approvals inbox', () => {
+  test('analytics: averages match the grading engine; at-risk list; teacher sees only own classes', async () => {
+    const p = await h.login('principal1');
+    const r = await p.get('/api/analytics');
+    assert.strictEqual(r.status, 200);
+    assert.ok(r.body.kpis.students >= 4);
+    // Each at-risk student must really have a failed subject on their own report card.
+    for (const s of r.body.at_risk) {
+      assert.ok(s.subjects_failed > 0 && s.failed_subjects.length === s.subjects_failed);
+      const card = await p.get(`/api/reports/student/${s.id}`);
+      assert.strictEqual(card.body.overall_percent, s.overall_percent);
+    }
+    const bandTotal = r.body.bands.reduce((a, b) => a + b.count, 0);
+    assert.strictEqual(bandTotal, r.body.kpis.graded);
+    const t = await h.login('teacherB');
+    const tr = await t.get('/api/analytics');
+    assert.strictEqual(tr.status, 200);
+    assert.strictEqual(tr.body.scope.teacher, true);
+    assert.ok(tr.body.sections.every((s) => s.id === ids.secB));
+    const stu = await h.login('stu1');
+    assert.strictEqual((await stu.get('/api/analytics')).status, 403);
+  });
+
+  test('attention list and bulk approve + publish', async () => {
+    const t = await h.login('teacherA');
+    const a = (await t.post('/api/assessments').send({ term_id: ids.term, section_id: ids.secA, subject_id: ids.math, category_id: ids.weekly, title: 'Bulk test', max_score: 10 })).body;
+    const roster = (await t.get(`/api/assessments/${a.id}`)).body.roster;
+    await t.put(`/api/assessments/${a.id}/grades`).send({ rows: roster.map((r) => ({ student_id: r.student_id, score: 9 })) });
+    const fresh = (await t.get(`/api/assessments/${a.id}`)).body.assessment;
+    await t.post(`/api/assessments/${a.id}/transition`).send({ action: 'submit', version: fresh.version });
+    const p = await h.login('principal1');
+    const att = await p.get('/api/analytics/attention');
+    assert.ok(att.body.items.awaiting_approval >= 1);
+    const inbox = await p.get('/api/assessments?status=submitted');
+    const row = inbox.body.items.find((x) => x.id === a.id);
+    assert.strictEqual(row.submitted_by, 'teacherA'); assert.strictEqual(Number(row.avg_percent), 90); assert.strictEqual(row.below_pass, 0);
+    assert.strictEqual((await t.post('/api/assessments/bulk-approve').send({ ids: [a.id] })).status, 403); // teachers cannot approve
+    const sub = await t.get(`/api/assessments/${a.id}`); assert.strictEqual(sub.body.assessment.status, 'submitted');
+    const r = await p.post('/api/assessments/bulk-approve').send({ ids: [a.id, 999999], publish: true });
+    assert.deepStrictEqual(r.body.done, [a.id]);
+    assert.strictEqual(r.body.skipped[0].id, 999999);
+    assert.strictEqual((await p.get(`/api/assessments/${a.id}`)).body.assessment.status, 'published');
+    const s = await h.login('stu1');
+    assert.ok((await s.get(`/api/reports/student/${ids.students[0]}`)).body.assessments.some((x) => x.title === 'Bulk test'));
   });
 });

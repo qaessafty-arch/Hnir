@@ -15,11 +15,11 @@ The application, database and load generator all ran **on the same machine**, so
 | Load (1,000 users) | `node ops/loadtest.js` | **Pass**: 0 errors / 0 5xx, see 4.4 |
 | Dependency audit | `npm audit` (server, client) | **0 vulnerabilities** |
 
-Total automated tests: **41 passed, 0 failed** (40 at first delivery + 1 TOTP RFC test-vector test added for the Vercel fix).
+Total automated tests: **43 passed, 0 failed** (40 at first delivery, plus the TOTP RFC test-vector test for the Vercel fix, plus the analytics and bulk-approval tests; the parent-access test was replaced by a parent-role-removed test).
 
 ## 4.2 Integration and security tests (`server/test/api.test.js`)
 
-Each run builds a fresh schema via the migrations, then a fixture school: 1 year, 2 sections, 2 teachers, 4 students, 1 parent with one verified and one **unverified** link, and admin roles.
+Each run builds a fresh schema via the migrations, then a fixture school: 1 year, 2 sections, 2 teachers, 4 students, and admin roles.
 
 | Area | Test | Result |
 |---|---|---|
@@ -36,7 +36,7 @@ Each run builds a fresh schema via the migrations, then a fixture school: 1 year
 | Authorization / isolation | Unauthenticated → 401 on data routes | Pass |
 | | Student sees **only published** grades of themself | Pass |
 | | **IDOR:** student requesting each other student's report, profile, photo and CSV by changing the ID → 404 every time; staff list endpoints → 403 | Pass |
-| | Parent: only the verified child; unverified link and unrelated students → 404 | Pass |
+| | Parent role removed: role absent, cannot be assigned | Pass |
 | | Teacher: cannot read or write another teacher's sheet, cannot create sheets for an unassigned subject, sees only own sheets, report scoped to own subjects | Pass |
 | | Teacher cannot grade a student outside the section | Pass |
 | | Auditor: read OK; every write → 403/404 | Pass |
@@ -55,11 +55,13 @@ Each run builds a fresh schema via the migrations, then a fixture school: 1 year
 | | Upload: HTML disguised as PNG rejected; SVG rejected; 3 MB → 413; `../../etc/passwd.png` stored under a random name; photo visible to its owner, 404 to other students | Pass |
 | | `UPDATE`/`DELETE` on `audit_logs` raise an exception | Pass |
 | | Invalid settings rejected; super_admin MFA requirement cannot be removed | Pass |
+| Analysis | Analytics overall % equals each at-risk student's report card; band counts add up; teacher sees only own classes; students get 403 | Pass |
+| | Attention list counts waiting sheets; inbox shows sender, class average, below-pass; teacher cannot bulk-approve; bulk approve + publish makes grades visible to the student; unknown sheet skipped, not failed | Pass |
 | Bulk import | Preview reports per-row errors; commit with errors imports nothing; valid commit creates accounts with one-time passwords | Pass |
 
 ## 4.3 Browser end-to-end (`e2e/smoke.js`)
 
-Roles: principal, super admin, teacher, student, parent. Languages: Kurdish (RTL) and English (LTR). Viewports: 1366×860 desktop, 820×1180 tablet, 390×844 phone.
+Roles: principal, super admin, teacher, student. Languages: Kurdish (RTL) and English (LTR). Viewports: 1366×860 desktop, 820×1180 tablet, 390×844 phone.
 
 Checks on every screen: no console errors, no uncaught exceptions, no 5xx responses, no horizontal page overflow. A full-page screenshot is saved for review.
 Teacher flow: open a class → create a sheet → enter `9.5`, `11` (over max) and `٧` (Eastern Arabic 7) → inline error shown for 11 → fix → save draft → toast.
@@ -74,11 +76,12 @@ Print flow: student report card rendered with print media and exported to A4 PDF
 6. "Session expired" was shown on the first visit to the login page.
 7. Year ranges were reversed in RTL ("2027-2026").
 8. Browser date formatting silently fell back to English for Kurdish.
+10. On phones, chart cards were wider than the screen (hidden by the layout's clipping). Fixed, and the smoke test now checks every card fits.
 9. Login rate limiting keyed on IP alone would lock a whole school behind one NAT address. Changed to IP+username plus a high per-IP ceiling.
 
 ## 4.4 Load and concurrency test (`ops/loadtest.js`)
 
-Dataset: **1,011 accounts** (1,000 students, 6 teachers, 4 staff, 1 parent), 8 sections, 13 subjects, 208 published sheets, **26,000 grade records**. Each phase lasted 30 s.
+Dataset: **1,011 accounts** (1,000 students, 6 teachers, 4 staff, 1 parent account that existed before the parent role was removed), 8 sections, 13 subjects, 208 published sheets, **26,000 grade records**. Each phase lasted 30 s.
 
 | Phase | Scenario | Single process (`WEB_CONCURRENCY=1`) | 4 workers (`WEB_CONCURRENCY=4`) |
 |---|---|---|---|

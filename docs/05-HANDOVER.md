@@ -15,7 +15,7 @@ Contents:
 12. Operations and monitoring
 13. Administrator guide
 14. Teacher guide
-15. Student and parent guide
+15. Student guide
 16. Completed vs. remaining
 
 Related reports:
@@ -91,8 +91,7 @@ Key relationships:
 ```
 roles ─< role_permissions >─ permissions
 users ─< user_roles >─ roles          users ─< sessions          users ─< password_reset_tokens
-users ─1:1─ teachers                   users ─1:1─ students (login)  users ─1:1─ parents
-parents ─< guardian_student_relationships >─ students   (verified_at, verified_by)
+users ─1:1─ teachers                   users ─1:1─ students (login)
 academic_years ─< terms
 academic_years ─< sections >─ classes(grade 1–12)        sections.homeroom_teacher_id → teachers
 students ─< enrollments >─ sections         UNIQUE(student, academic_year)
@@ -121,7 +120,7 @@ draft ──submit──▶ submitted ──approve──▶ approved ──publ
 
 - Teachers edit only in `draft`/`returned`, only while the term's **grade entry is open**, and only for their own section and subject.
 - **Submit** requires every active student to have a score or an explicit *missing* / *excused* status.
-- Students and parents see **published** sheets only.
+- Students see **published** sheets only ("Visible to students").
 - Version checks on every transition prevent acting on a stale view.
 
 ## 6. Concurrency
@@ -262,28 +261,21 @@ Delete that CSV after distributing it.
 
 ## 13. Administrator guide (principal / super admin / registrar)
 
-1. **Before the year starts:**
-   - **Academic Years**: add the year and terms, then *Set as current*.
-   - **Classes & Sections**: add sections (e.g. Grade 10 – A) and homeroom teachers.
-   - **Subjects**: confirm max scores and pass marks.
-   - **Teachers**: add teachers (each gets a one-time password).
-   - **Teacher Assignments**: assign teacher → section → subject.
-2. **Students:**
-   - **Add student** (with a section), or use **Import Students** for a CSV. Give each student the printed one-time login.
-   - Open a student to upload a photo, change section, archive or transfer (a reason is required), or *Reset login password*.
-3. **Parents:** in **User Management → Add user**, choose the *Parent* role, then use the link icon to attach their children. Only linked (verified) children are visible to the parent.
-4. **Grades:**
-   - The dashboard lists *Pending grade approvals*.
-   - Open a sheet → *Approve* or *Return for changes* (with a comment) → *Publish to students*.
-   - To fix a published grade, edit it directly. A reason is required and it is logged.
-   - Close grade entry for a term in **Academic Years** (edit the term).
-5. **Reports:**
-   - **Reports → Class summary** (print / CSV); **Student report card** (print / CSV).
-   - **Grade Overview** has filters, a missing-grade tracker and CSV export.
-6. **Security:**
-   - **User Management**: disable accounts, issue password reset codes, reset MFA.
-   - **Audit Logs**: see who did what.
-   - **Settings**: policies.
+The menu has 8 items. Start every day on **Home**.
+
+1. **Home:** "Needs your attention" lists, in plain sentences, everything waiting for you, each with a button that goes straight there. Below are the school average, the % of students passing all subjects, the number of students needing help, and two charts (subjects and classes; red bars are below the pass mark).
+2. **Approvals:** every grade sheet teachers have sent. Each row shows the class average and how many students are below the pass mark. Click **Approve & publish** (or tick several and approve them all at once) to make the grades visible to students. Click **Review** to open a sheet and **Send back** with a comment if something is wrong.
+3. **Results & analysis:** pick a term and/or grade.
+   - *Overview:* charts and top students.
+   - *Students needing help:* who is below the pass mark and in which subjects; export it for parent meetings.
+   - *Class results:* the full class table to print.
+   - *All grades:* every grade, with filters.
+   - *Report cards:* find a student and print.
+4. **Students:** search, add (or *Import Students* from a CSV), open a student to edit, change class, reset their password or archive them.
+5. **Grade sheets:** all sheets by class, subject and status. Principals can also enter or correct grades here; corrections after publishing need a reason.
+6. **Staff:** *Teachers* (add, edit), *Who teaches what* (assign teacher → class → subject), *Accounts* (other staff accounts, password reset codes, MFA reset, disable).
+7. **School setup** (once a year): *Years & terms* (add the year and terms, set the current year, open or close grade entry), *Classes*, *Subjects* (max score, pass mark).
+8. **System:** *Settings* (grading policy, security policy, school name, backup status) and *Activity history* (who did what).
 
 ## 14. Teacher guide
 
@@ -296,13 +288,11 @@ Delete that CSV after distributing it.
 5. If the principal returns it, you'll get a notification. Fix the grades and submit again.
 6. If another teacher saved the same sheet at the same time, the changed rows turn orange with their latest values. Check them and save again.
 
-## 15. Student and parent guide
+## 15. Student guide
 
-- **Students:** sign in with your student number (e.g. `DPS-2026-0001`) and the password from the school office, then choose a new password.
-  - **My Grades** shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback.
-  - Choose a term or the whole year. **Print** gives an A4 report card.
-- **Parents:** sign in with the account the school created. If you have several children, pick one at the top.
-- Only grades that the school has **published** are shown. Forgot your password? Ask the school office for a reset code and use *I have a reset code* on the login page.
+- Sign in with your student number (e.g. `DPS-2026-0001`) and the password from the school office, then choose a new password.
+- **My Grades** shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback. Choose a term or the whole year. **Print** gives an A4 report card.
+- Only grades the school has made visible are shown. Forgot your password? Ask the school office for a reset code and use *I have a reset code* on the login page.
 
 ## 16. Installable app (PWA)
 
@@ -339,6 +329,7 @@ The system installs as an app from the same link; there is no separate codebase 
 | Background job queue for exports | Exports are generated synchronously with a 50,000-row cap; a full export of 26,750 grade rows took 0.38 s in testing. Add a queue if data grows by orders of magnitude |
 | MFA recovery codes, shared rate-limit store, server-side image re-encoding, external pentest, axe/screen-reader audit | See Security report §2.4 |
 | Staff profile photos | Only student photos |
+| Parent / guardian accounts | Removed at the school's request (migration 003) |
 | Self-service profile editing by students | Students can change their password and language only; profile data is maintained by the registrar (safer for official records) |
 
 **Known issues:** none open from the test runs. The limitations are listed above and in the security report §2.4.

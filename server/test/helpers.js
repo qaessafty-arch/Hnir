@@ -31,7 +31,7 @@ async function mkUser(username, roles, { mustChange = false } = {}) {
   return u.rows[0].id;
 }
 
-/** Build a small school: 1 year, 1 term, 2 sections, 2 teachers, 4 students, 1 parent. */
+/** Build a small school: 1 year, 1 term, 2 sections, 2 teachers, 4 students. */
 async function fixture() {
   const ids = {};
   ids.principal = await mkUser('principal1', ['principal']);
@@ -61,12 +61,6 @@ async function fixture() {
     await db.query('INSERT INTO enrollments (student_id, section_id, academic_year_id) VALUES ($1,$2,$3)', [s.rows[0].id, i <= 2 ? ids.secA : ids.secB, ids.year]);
     ids.students.push(s.rows[0].id);
   }
-  const pu = await mkUser('parent1', ['parent']);
-  const p = await db.query('INSERT INTO parents (user_id) VALUES ($1) RETURNING id', [pu]);
-  ids.parentId = p.rows[0].id;
-  await db.query('INSERT INTO guardian_student_relationships (parent_id, student_id, verified_at) VALUES ($1,$2,now())', [p.rows[0].id, ids.students[0]]);
-  // Unverified link to student 2: must NOT grant access.
-  await db.query('INSERT INTO guardian_student_relationships (parent_id, student_id) VALUES ($1,$2)', [p.rows[0].id, ids.students[1]]);
   return ids;
 }
 

@@ -185,7 +185,14 @@ export function BandBadge({ band }) {
   return <span className={`badge ${BAND[band]}`}>{t(`band_${band}`)}</span>;
 }
 
+// Pages shown inside a tabbed hub render only their actions/subtitle (the hub owns the title).
+export const EmbedCtx = createContext(false);
 export function PageHead({ title, sub, children }) {
+  const embedded = useContext(EmbedCtx);
+  if (embedded) {
+    if (!children && !sub) return null;
+    return <div className="page-head embedded">{sub && <p className="muted" style={{ marginInlineEnd: 'auto' }}>{sub}</p>}{children && <div className="page-actions">{children}</div>}</div>;
+  }
   return (
     <div className="page-head">
       <div><h1>{title}</h1>{sub && <p>{sub}</p>}</div>

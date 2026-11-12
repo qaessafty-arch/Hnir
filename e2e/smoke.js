@@ -31,6 +31,13 @@ async function shot(page, name, path) {
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (overflow > 1) problems.push(`${name}: horizontal page overflow ${overflow}px`);
+  // Cards must fit inside the main column (the layout clips overflow, so check cards directly).
+  const wide = await page.evaluate(() => {
+    const main = document.querySelector('#main'); if (!main) return 0;
+    const box = main.getBoundingClientRect();
+    return [...document.querySelectorAll('#main .card')].filter((c) => { const r = c.getBoundingClientRect(); return r.left < box.left - 1 || r.right > box.right + 1; }).length;
+  });
+  if (wide) problems.push(`${name}: ${wide} card(s) wider than the screen`);
 }
 
 (async () => {
@@ -50,29 +57,31 @@ async function shot(page, name, path) {
 
   for (const lang of ['ckb', 'en']) {
     const { ctx, page } = await session(browser, 'demo.principal', { lang });
-    await shot(page, `10-dashboard-${lang}`, '/');
+    await shot(page, `10-home-${lang}`, '/');
     await shot(page, `11-students-${lang}`, '/students');
     await page.click('table tbody tr:first-child a'); await page.waitForSelector('.avatar-lg');
     await shot(page, `12-student-detail-${lang}`);
-    await shot(page, `13-grades-${lang}`, '/grades');
+    await shot(page, `13-grade-sheets-${lang}`, '/grades');
     await page.click('table tbody tr:first-child a'); await page.waitForSelector('.sticky-bar');
-    await shot(page, `14-sheet-published-${lang}`);
-    await shot(page, `15-overview-${lang}`, '/grades/overview');
-    await shot(page, `16-reports-${lang}`, '/reports');
-    await shot(page, `17-report-card-${lang}`, '/reports/student/1');
-    await shot(page, `18-users-${lang}`, '/users');
-    await shot(page, `19-audit-${lang}`, '/audit');
-    await shot(page, `20-years-${lang}`, '/years');
-    await shot(page, `21-sections-${lang}`, '/sections');
-    await shot(page, `22-subjects-${lang}`, '/subjects');
-    await shot(page, `23-assignments-${lang}`, '/assignments');
-    await shot(page, `24-import-${lang}`, '/students/import');
-    await shot(page, `25-teachers-${lang}`, '/teachers');
+    await shot(page, `14-sheet-${lang}`);
+    await shot(page, `15-approvals-${lang}`, '/approvals');
+    await shot(page, `16-results-overview-${lang}`, '/results');
+    await shot(page, `17-results-at-risk-${lang}`, '/results?tab=help');
+    await shot(page, `18-results-classes-${lang}`, '/results?tab=classes');
+    await shot(page, `19-results-all-grades-${lang}`, '/results?tab=grades');
+    await shot(page, `20-report-card-${lang}`, '/reports/student/1');
+    await shot(page, `21-staff-${lang}`, '/staff');
+    await shot(page, `22-staff-accounts-${lang}`, '/staff?tab=accounts');
+    await shot(page, `23-staff-assignments-${lang}`, '/staff?tab=assignments');
+    await shot(page, `24-setup-${lang}`, '/setup');
+    await shot(page, `25-setup-classes-${lang}`, '/setup?tab=classes');
+    await shot(page, `26-system-audit-${lang}`, '/system?tab=audit');
+    await shot(page, `27-import-${lang}`, '/students/import');
     await ctx.close();
   }
   {
     const { ctx, page } = await session(browser, 'demo.admin', { lang: 'en' });
-    await shot(page, '26-settings-en', '/settings');
+    await shot(page, '28-system-settings-en', '/system');
     await shot(page, '27-account-en', '/account');
     await ctx.close();
   }
@@ -80,7 +89,7 @@ async function shot(page, name, path) {
     // Teacher: create a sheet, enter grades incl. an invalid one and Eastern-Arabic digits, save draft.
     const { ctx, page } = await session(browser, 'demo.teacher1', { lang: 'ckb' });
     await shot(page, '30-teacher-dashboard-ckb');
-    await page.click('#main .card a.btn-primary'); await page.waitForLoadState('networkidle');
+    await page.click('#main .grid .card a.btn-primary'); await page.waitForLoadState('networkidle');
     await page.click('.page-actions .btn-primary');
     await page.fill('#nsf input[inputmode=numeric]', String(3 + (Date.now() % 50))); // unique week per run
     await page.click('button[form=nsf]');
@@ -107,12 +116,7 @@ async function shot(page, name, path) {
     await page.pdf({ path: `${OUT}/report-card-print.pdf`, format: 'A4', printBackground: true });
     await ctx.close();
   }
-  {
-    const { ctx, page } = await session(browser, 'demo.parent', { lang: 'en' });
-    await shot(page, '43-parent-portal-en');
-    await ctx.close();
-  }
-  for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'],
+  for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'], ['demo.principal', '/results', '55-mobile-results'], ['demo.principal', '/approvals', '56-mobile-approvals'],
     ['DPS-2026-0001', '/portal', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
     const { ctx, page } = await session(browser, u, { lang: 'ckb', viewport: { width: 390, height: 844 } });
     await shot(page, name, path);
@@ -124,7 +128,7 @@ async function shot(page, name, path) {
   }
   {
     const { ctx, page } = await session(browser, 'demo.principal', { lang: 'en', viewport: { width: 820, height: 1180 } });
-    await shot(page, '55-tablet-overview', '/grades/overview');
+    await shot(page, '57-tablet-results', '/results');
     await ctx.close();
   }
   await browser.close();

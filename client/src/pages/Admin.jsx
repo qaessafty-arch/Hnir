@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, KeyRound, ShieldOff, UserX, UserCheck, Link2, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, KeyRound, ShieldOff, UserX, UserCheck, Star } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, normalizeDigits, ltr } from '../lib/api';
@@ -88,7 +88,7 @@ export function TeachersPage() {
 }
 
 // ---------------- Users ----------------
-const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'parent', 'auditor'];
+const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'auditor'];
 export function UsersPage() {
   const { t, fmtDateTime, errorText } = useI18n();
   const { can, user: me } = useAuth();
@@ -103,7 +103,6 @@ export function UsersPage() {
   const [rolesFor, setRolesFor] = useState(null);
   const [creds, setCreds] = useState(null);
   const [token, setToken] = useState(null);
-  const [childrenFor, setChildrenFor] = useState(null);
   const assignable = ROLE_KEYS.filter((r) => can('roles.manage') || !['super_admin', 'principal'].includes(r));
   const act = async (fn, msg) => { try { await fn(); toast(msg || t('saved')); reload(); } catch (ex) { toast(errorText(ex), 'bad'); } };
   return (
@@ -129,7 +128,6 @@ export function UsersPage() {
                   <td><div className="actions">
                     <button type="button" className="btn btn-ghost btn-sm" title={t('edit')} aria-label={t('edit')} onClick={() => setEdit(u)}><Pencil size={15} /></button>
                     {!u.roles?.includes('student') && <button type="button" className="btn btn-ghost btn-sm" title={t('roles')} aria-label={t('roles')} onClick={() => setRolesFor(u)}><Star size={15} /></button>}
-                    {u.roles?.includes('parent') && <button type="button" className="btn btn-ghost btn-sm" title={t('linkedChildren')} aria-label={t('linkedChildren')} onClick={() => setChildrenFor(u)}><Link2 size={15} /></button>}
                     <button type="button" className="btn btn-ghost btn-sm" title={t('issueReset')} aria-label={t('issueReset')} onClick={() => act(async () => setToken((await api(`/users/${u.id}/reset-token`, { method: 'POST', body: {} })).token))}><KeyRound size={15} /></button>
                     {u.mfa_enabled && <button type="button" className="btn btn-ghost btn-sm" title={t('resetMfa')} aria-label={t('resetMfa')} onClick={async () => { if (await confirm({ message: t('resetMfaConfirm'), danger: true })) act(() => api(`/users/${u.id}/mfa-reset`, { method: 'POST', body: {} })); }}><ShieldOff size={15} /></button>}
                     {u.id !== me.id && (u.status === 'active'
@@ -159,35 +157,7 @@ export function UsersPage() {
       {token && <Modal size="narrow" title={t('issueReset')} onClose={() => setToken(null)} footer={<button type="button" className="btn btn-primary" onClick={() => setToken(null)}>{t('close')}</button>}>
         <p className="small" style={{ marginBlockEnd: 10 }}>{t('resetIssued')}</p><p style={{ wordBreak: 'break-all', userSelect: 'all' }}><Code>{token}</Code></p>
         <p className="small muted" style={{ marginBlockStart: 10 }}><bdi dir="ltr">{window.location.origin}/reset</bdi></p></Modal>}
-      {childrenFor && <ChildrenModal user={childrenFor} onClose={() => setChildrenFor(null)} />}
     </>
-  );
-}
-
-function ChildrenModal({ user, onClose }) {
-  const { t, errorText } = useI18n();
-  const toast = useToast();
-  const list = useApi(`/users/${user.id}/children`);
-  const [q, setQ] = useState('');
-  const dq = useDebounced(q);
-  const found = useApi('/students', { q: dq, pageSize: 8 }, { skip: dq.length < 2 });
-  const [rel, setRel] = useState('guardian');
-  const link = async (sid) => { try { await api(`/users/${user.id}/children`, { method: 'POST', body: { student_id: sid, relationship: rel } }); toast(t('saved')); list.reload(); } catch (ex) { toast(errorText(ex), 'bad'); } };
-  const unlink = async (sid) => { try { await api(`/users/${user.id}/children/${sid}`, { method: 'DELETE' }); list.reload(); } catch (ex) { toast(errorText(ex), 'bad'); } };
-  return (
-    <Modal title={`${t('linkedChildren')} — ${user.full_name}`} onClose={onClose}>
-      {list.loading ? <Loading /> : list.error ? <ErrorState error={list.error} /> : (
-        <table className="table"><tbody>{list.data.items.length === 0 && <tr><td className="muted">—</td></tr>}
-          {list.data.items.map((c) => <tr key={c.id}><td>{c.full_name_ckb} <Code>{c.student_no}</Code></td><td>{t(`rel_${c.relationship}`)}</td><td>{c.verified_at ? <span className="badge badge-ok">{t('verified')}</span> : <span className="badge badge-warn">{t('unverified')}</span>}</td>
-            <td><button type="button" className="btn btn-ghost btn-sm" onClick={() => unlink(c.id)} aria-label={t('remove')}><Trash2 size={15} /></button></td></tr>)}</tbody></table>
-      )}
-      <h3 style={{ marginBlock: '18px 8px' }}>{t('linkChild')}</h3>
-      <div className="row" style={{ alignItems: 'flex-end' }}>
-        <Field label={t('search')} className="grow">{(p) => <input {...p} className="input" type="search" placeholder={t('searchStudents')} value={q} onChange={(e) => setQ(e.target.value)} />}</Field>
-        <Field label={t('relationship')}>{(p) => <select {...p} className="select" value={rel} onChange={(e) => setRel(e.target.value)}>{['father', 'mother', 'guardian', 'other'].map((r) => <option key={r} value={r}>{t(`rel_${r}`)}</option>)}</select>}</Field>
-      </div>
-      <table className="table"><tbody>{(found.data?.items || []).map((s) => <tr key={s.id}><td>{s.full_name_ckb} <Code>{s.student_no}</Code></td><td><button type="button" className="btn btn-secondary btn-sm" onClick={() => link(s.id)}><Plus size={15} />{t('add')}</button></td></tr>)}</tbody></table>
-    </Modal>
   );
 }
 

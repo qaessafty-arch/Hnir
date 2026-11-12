@@ -45,7 +45,7 @@ Palette tokens are taken from the logo itself: navy `#182B53` and gold `#E59B24`
 | Grade sheet | Roster grid sized for speed: **Enter / ↑ / ↓** move between students; instant validation (the same rules as the server); live percentage; missing/excused statuses; "mark remaining as missing"; an unsaved-changes counter and a leave warning; a sticky action bar with workflow buttons that depend on the role; history modal (approvals and per-grade changes); conflict banner after concurrent edits |
 | Grade overview | All records with 6 filters, a failing/missing-only toggle, sorting, pagination, CSV export and a collapsible missing-grade tracker |
 | Report card | Logo header, student meta, overall %, band, passed/failed counts, a subject table with pass marks, assessment history with teacher feedback, the **formula printed on the card**, signature lines, generation timestamp, an A4 print layout and CSV export |
-| Student / parent portal | The same report card, published grades only; parents pick from verified children |
+| Student portal | The same report card, published grades only |
 | Settings | Grading policy (mode, rounding, decimals, missing = 0, bands), security policy (MFA roles, session timeouts, lockout), school info, backup status |
 
 ## 3.5 Bilingual (Central Kurdish RTL / English LTR)
@@ -71,3 +71,19 @@ Palette tokens are taken from the logo itself: navy `#182B53` and gold `#E59B24`
 | Colour is never the only signal (fail rows also show "Below pass mark" text, statuses are text badges) | review |
 
 **Not done:** a formal WCAG audit with a screen reader (NVDA/VoiceOver), and automated axe-core scanning. Both are recommended before go-live.
+
+## 3.7 Simplification for administrators (second iteration)
+
+Feedback: admins found it hard to analyse results and to find their way around. Changes:
+
+| Before | After |
+|---|---|
+| 14 menu items | 8: **Home, Approvals, Grade sheets, Students, Results & analysis, Staff, School setup, System** (+ Account). Related pages became tabs (Staff = Teachers / Who teaches what / Accounts; School setup = Years & terms / Classes / Subjects; System = Settings / Activity history). Old addresses redirect |
+| Dashboard of raw counts | **Home:** "Needs your attention" written as plain sentences (e.g. "3 grade sheets are waiting for your approval") with a button that goes straight there, or "Everything is up to date"; then 4 headline numbers (students, school average, % passing all subjects, students needing help) and two charts |
+| Workflow jargon (Draft / Submitted / Approved / Published / Returned) | Plain status names: *Teacher is entering, Waiting for approval, Approved – not yet visible, Visible to students, Sent back to teacher* |
+| Grade overview table only | **Results & analysis:** subject chart (sorted weakest first, red below the pass mark, pass-mark tick, pass rate per subject), class chart (tap a class to see its students), students by performance level, top 10 students, **Students needing help** (failed subjects shown as chips, CSV export), class results, all grades, report cards |
+| Approve then publish, one sheet at a time, opening each | **Approvals inbox:** class average, number below the pass mark and sender on each row; **Approve & publish** per row or for all selected at once; count badge in the menu |
+| No guidance | A one-line explanation at the top of each section |
+| Parent accounts | Removed (not needed by the school) |
+
+Charts follow the dataviz rules: single series with direct value labels, one hue, the reserved "critical" red only for below-pass bars together with a text label (never colour alone), a recessive track and a pass-mark tick. Bands with "≥" are isolated so RTL does not mirror them into "≤".

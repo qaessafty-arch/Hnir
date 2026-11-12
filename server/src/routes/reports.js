@@ -32,7 +32,7 @@ async function studentHeader(studentId, yearId) {
   return r.rows[0];
 }
 
-// Student report card (also used by the student and parent portals)
+// Student report card (also used by the student portal)
 router.get('/student/:id', ah(async (req, res) => {
   const sid = parse(id, req.params.id);
   const q = parse(z.object({ termId: id.optional(), yearId: id.optional(), format: z.enum(['json', 'csv']).default('json') }), req.query);

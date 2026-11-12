@@ -25,7 +25,7 @@ export function StudentsPage() {
   const currentSections = sections.data?.items || [];
   return (
     <>
-      <PageHead title={t('studentsTitle')} sub={t('studentsSub')}>
+      <PageHead title={t('studentsTitle')} sub={t('studentsHelp')}>
         {can('students.import') && <Link to="/students/import" className="btn btn-secondary">{t('navImport')}</Link>}
         {can('students.write') && <button type="button" className="btn btn-primary" onClick={() => setEditing({})}><Plus size={18} />{t('addStudent')}</button>}
       </PageHead>

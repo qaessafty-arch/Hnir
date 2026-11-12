@@ -47,7 +47,13 @@ router.get('/', ah(async (req, res) => {
             t.name_en AS term_name_en, t.name_ckb AS term_name_ckb, c.grade_level, sec.name AS section_name,
             sj.name_en AS subject_name_en, sj.name_ckb AS subject_name_ckb, cat.name_en AS category_name_en, cat.name_ckb AS category_name_ckb,
             (SELECT count(*) FROM enrollments e WHERE e.section_id = a.section_id AND e.status = 'active')::int AS roster_count,
-            (SELECT count(*) FROM grade_records g WHERE g.assessment_id = a.id)::int AS entered_count
+            (SELECT count(*) FROM grade_records g WHERE g.assessment_id = a.id)::int AS entered_count,
+            (SELECT round(avg(g.score * 100 / a.max_score), 1) FROM grade_records g WHERE g.assessment_id = a.id AND g.status = 'graded') AS avg_percent,
+            (SELECT count(*) FROM grade_records g WHERE g.assessment_id = a.id
+               AND (g.status = 'missing' OR (g.status = 'graded' AND g.score * 100 / a.max_score < sj.pass_mark_percent)))::int AS below_pass,
+            (SELECT u.full_name FROM grade_approvals ga JOIN users u ON u.id = ga.acted_by
+              WHERE ga.assessment_id = a.id AND ga.action = 'submit' ORDER BY ga.acted_at DESC LIMIT 1) AS submitted_by,
+            a.version
        ${from} ${where} ORDER BY a.updated_at DESC LIMIT $8 OFFSET $9`, [...params, q.pageSize, (q.page - 1) * q.pageSize]);
   res.json({ items: rows, total, page: q.page, pageSize: q.pageSize });
 }));
@@ -309,6 +315,40 @@ router.post('/:id/transition', ah(async (req, res) => {
     return { status: t.to };
   });
   res.json(out);
+}));
+
+// Approve (and optionally publish) several submitted sheets at once — one transaction, all-or-nothing per sheet.
+router.post('/bulk-approve', requirePerm('grades.approve'), ah(async (req, res) => {
+  const b = parse(z.object({ ids: z.array(id).min(1).max(200), publish: z.boolean().default(true) }), req.body);
+  if (b.publish && !has(req, 'grades.publish')) throw forbidden();
+  const done = []; const skipped = [];
+  for (const aid of [...new Set(b.ids)]) {
+    try {
+      await db.tx(async (c) => {
+        await c.query("SET LOCAL lock_timeout = '3s'");
+        const a = await loadAssessment(c, aid, true);
+        let status = a.status;
+        if (status !== 'submitted' && !(b.publish && status === 'approved')) throw conflict('invalid_transition');
+        const steps = status === 'submitted' ? ['approve'] : [];
+        if (b.publish) steps.push('publish');
+        for (const action of steps) {
+          const to = TRANSITIONS[action].to;
+          await c.query('INSERT INTO grade_approvals (assessment_id, action, from_status, to_status, acted_by) VALUES ($1,$2,$3,$4,$5)', [aid, action, status, to, req.user.id]);
+          status = to;
+        }
+        await c.query('UPDATE assessments SET status=$2, version=version+1, updated_at=now() WHERE id=$1', [aid, status]);
+        if (status === 'published') {
+          const st = await c.query('SELECT s.user_id FROM grade_records g JOIN students s ON s.id = g.student_id WHERE g.assessment_id = $1 AND s.user_id IS NOT NULL', [aid]);
+          await notify(c, st.rows.map((r) => r.user_id), 'grades.published', { assessment_id: aid, title: a.title, action: 'publish' });
+        }
+        await audit(req, b.publish ? 'assessment.approve_publish' : 'assessment.approve', { entityType: 'assessment', entityId: aid, details: { from: a.status, to: status, bulk: true }, client: c });
+      });
+      done.push(aid);
+    } catch (err) {
+      skipped.push({ id: aid, code: err.code || 'error' });
+    }
+  }
+  res.json({ done, skipped });
 }));
 
 router.get('/:id/history', ah(async (req, res) => {

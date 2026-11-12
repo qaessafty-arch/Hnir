@@ -62,14 +62,12 @@ async function main() {
       }
     }
     const studentRole = await role('student');
-    let firstStudentUser;
     for (let i = 0; i < n; i++) {
       const no = (await c.query(`SELECT 'DPS-2026-' || lpad(nextval('student_no_seq')::text,4,'0') AS no`)).rows[0].no;
       const fi = i % FIRST.length, li = (i * 7) % LAST.length;
       const u = await c.query(`INSERT INTO users (username, full_name, password_hash, must_change_password) VALUES ($1,$2,$3,false) RETURNING id`,
         [no, `${FIRST[fi]} ${LAST[li]}`, hash]);
       await c.query('INSERT INTO user_roles VALUES ($1,$2)', [u.rows[0].id, studentRole]);
-      firstStudentUser ??= u.rows[0].id;
       const s = await c.query(`INSERT INTO students (user_id, student_no, full_name_ckb, full_name_en, gender) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
         [u.rows[0].id, no, `${FIRST[fi]} ${LAST[li]}`, `${FIRST_EN[fi]} ${LAST_EN[li]}`, i % 2 ? 'female' : 'male']);
       await c.query('INSERT INTO enrollments (student_id, section_id, academic_year_id) VALUES ($1,$2,$3)', [s.rows[0].id, sections[i % sections.length], y]);
@@ -91,11 +89,6 @@ async function main() {
         }
       }
     }
-    // A parent linked to the first student.
-    const pu = await mkUser('demo.parent', 'Demo Parent', 'parent');
-    const p = await c.query('INSERT INTO parents (user_id) VALUES ($1) RETURNING id', [pu]);
-    const firstStudent = (await c.query('SELECT id FROM students WHERE user_id=$1', [firstStudentUser])).rows[0].id;
-    await c.query("INSERT INTO guardian_student_relationships (parent_id, student_id, relationship, verified_at) VALUES ($1,$2,'father',now())", [p.rows[0].id, firstStudent]);
   });
   // Demo accounts skip MFA enrolment so local testing is quick.
   await db.query(`UPDATE system_settings SET value = jsonb_set(value, '{mfa_required_roles}', '[]') WHERE key='security'`);
