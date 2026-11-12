@@ -24,6 +24,7 @@ export default function StudentShell() {
           <div className="st-brand">
             <span className="logo-plate"><Logo size={46} /></span>
             <div>
+              <span className="st-word" dir="ltr">DARWAZA</span>
               <strong>{t('schoolCkb')}</strong>
               <span dir="ltr">Darwaza Private School • {t('gradeSystemEn')}</span>
             </div>

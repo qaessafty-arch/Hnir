@@ -130,7 +130,7 @@ export default function WeeklyCard({ studentId, printBase = '/print/report' }) {
       {/* Performance history */}
       {d.history.length > 0 && (
         <details className="card wk-history">
-          <summary><LineChart size={18} aria-hidden="true" /><span>{t('performanceHistory')}</span></summary>
+          <summary><LineChart size={18} aria-hidden="true" /><span>{t('performanceHistory')}<small className="wk-history-hint">{t('performanceHistoryHint')}</small></span></summary>
           <div className="wk-history-body">
             <div className="wk-chips">
               {d.term_averages.map((ta) => <span key={ta.term_id} className="wk-chip">{t('termAverage')} · {pick(ta)}: <strong>{fmtPct(ta.average_percent)}</strong></span>)}

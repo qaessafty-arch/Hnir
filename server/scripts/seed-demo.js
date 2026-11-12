@@ -20,6 +20,20 @@ const LAST_EN = ['Kamal', 'Ahmed', 'Rebwar', 'Saman', 'Omar', 'Hasan', 'Mohammed
 
 /** Demo-only additions that may be missing from older demo databases (safe to run repeatedly). */
 async function topUpDemo() {
+  // Demo teacher comments on untouched demo grades (version 1, seeded or entered by a demo teacher; demo databases only). Deterministic, so re-runs change nothing.
+  const c = await db.query(
+    `UPDATE grade_records g SET comment = CASE
+        WHEN g.score / a.max_score >= 0.9 THEN 'کارێکی نایاب، بەردەوام بە'
+        WHEN g.score / a.max_score >= 0.7 THEN 'باشە، دەتوانیت باشتریش بیت'
+        WHEN g.score / a.max_score >= 0.5 THEN 'پێویستی بە ڕاهێنانی زیاتر هەیە'
+        ELSE 'تکایە زیاتر هەوڵ بدە و پرسیار بکە' END
+       FROM assessments a
+      WHERE a.id = g.assessment_id
+        AND EXISTS (SELECT 1 FROM users WHERE username = 'demo.admin')
+        AND (g.entered_by IS NULL OR g.entered_by IN (SELECT id FROM users WHERE username LIKE 'demo.teacher%'))
+        AND g.comment IS NULL AND g.version = 1 AND g.status = 'graded'
+        AND (g.score / a.max_score < 0.5 OR g.id % 3 <> 0)`);
+  if (c.rowCount) console.log(`Demo teacher comments added: ${c.rowCount}.`);
   const has = (await db.query('SELECT count(*)::int n FROM behavior_evaluations')).rows[0].n;
   if (has > 0) return;
   const ratings = ['excellent', 'very_good', 'very_good', 'good', 'good', 'average', 'needs_improvement'];

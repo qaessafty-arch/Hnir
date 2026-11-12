@@ -566,9 +566,12 @@ tr.wk-low { background: #fff5f6; }
 
 .wk-history summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 16px 22px; font-weight: 800; color: var(--navy-800); }
 .wk-history summary::-webkit-details-marker { display: none; }
-.wk-history summary::after { content: '▾'; margin-inline-start: auto; color: var(--ink-3); }
+.wk-history summary::after { content: ''; margin-inline-start: auto; inline-size: 9px; block-size: 9px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg); transition: transform .2s; }
+.wk-history[open] summary::after { transform: rotate(-135deg); }
+.wk-history summary:hover { background: var(--surface-2, #f6f8fc); }
+.wk-history-hint { display: block; font-weight: 500; font-size: 0.78rem; color: var(--ink-3); margin-block-start: 2px; }
+.st-brand .st-word { font-size: 0.66rem; letter-spacing: 0.32em; font-weight: 800; color: var(--gold-500); line-height: 1; margin-block-end: 3px; }
 .wk-history[open] summary { border-block-end: 1px solid var(--line); }
-.wk-history[open] summary::after { content: '▴'; }
 .wk-history-body { padding: 16px 22px 22px; }
 .wk-history h3 { font-size: 0.95rem; margin-block-end: 8px; }
 .wk-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-block-end: 16px; }
