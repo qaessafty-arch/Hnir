@@ -56,8 +56,8 @@ async function findStudent(studentNo) {
 router.post('/login', loginLimiter, ah(async (req, res) => {
   const body = parse(z.object({ code: z.string().trim().min(1).max(100) }), req.body);
   const code = normalizeLoginCode(body.code);
-  // Students: "DAR-4821" or just "4821". Staff: their 4-digit code. Students and staff share one 4-digit
-  // space (see lib/accounts.freeFourDigits), so a number never matches both.
+  // Everyone types DAR + 4 digits (students: their ID; staff: their personal code). "4821" alone also works.
+  // Students and staff share one 4-digit space (see lib/accounts.freeFourDigits), so a number never matches both.
   const sid = STUDENT_ID.exec(code);
   let rows = [];
   let kind = 'code';
@@ -66,9 +66,10 @@ router.post('/login', loginLimiter, ah(async (req, res) => {
     const st = await findStudent(`DAR-${digits}`);
     if (st) { rows = [st]; kind = 'student_id'; }
   }
-  if (!rows.length && !sid) {
+  if (!rows.length) {
+    const staffCode = sid && sid[1].length <= 4 ? sid[1].padStart(4, '0') : code;
     ({ rows } = await db.query(
-      'SELECT id, status, mfa_enabled FROM users WHERE login_code_hash = $1 AND deleted_at IS NULL', [loginCodeHash(code)]));
+      'SELECT id, status, mfa_enabled FROM users WHERE login_code_hash = $1 AND deleted_at IS NULL', [loginCodeHash(staffCode)]));
   }
   const u = rows[0];
   if (!u || u.status !== 'active') {

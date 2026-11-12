@@ -30,7 +30,7 @@ npm run build --prefix client && npm start --prefix server   # http://localhost:
 # or for UI work: npm run dev --prefix server  +  npm run dev --prefix client (http://localhost:5173)
 ```
 
-**Sign-in is by code only (no passwords).** Students type their student ID, which is DAR + 4 random digits (`DAR-4821`, or just `4821`). Staff type their 4-digit sign-in code. Demo (dev only): admin `4721`, principal `3958`, registrar `6204`, auditor `8137`, teachers 1–6 `2546` `7319` `5082` `9463` `1675` `6830`; first demo student `DAR-2741`.
+**Sign-in is by code only (no passwords).** Everyone types a code in the form **DAR-####** (the login box shows `DAR-`, so only the 4 digits are typed): students their student ID (4 random digits), staff their personal code. Demo (dev only): admin `DAR-4721`, principal `DAR-3958`, registrar `DAR-6204`, auditor `DAR-8137`, teachers 1–6 `DAR-2546` `DAR-7319` `DAR-5082` `DAR-9463` `DAR-1675` `DAR-6830`; first demo student `DAR-2741`.
 
 For production, **do not seed demo data**. Create the first administrator with `node server/scripts/bootstrap-admin.js <username> "<Full Name>"` (prints their sign-in code; `node server/scripts/issue-login-code.js <username>` issues a new one), then follow [deployment](docs/05-HANDOVER.md#8-deployment-production).
 

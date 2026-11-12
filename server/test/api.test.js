@@ -37,7 +37,7 @@ test.describe('authentication', () => {
     // The principal issues a new code: the old one stops working and old sessions end.
     const p = await h.login('principal1');
     const r = await p.post(`/api/users/${ids.teacherAUser}/login-code`).send({});
-    assert.match(r.body.login_code, /^\d{4}$/);
+    assert.match(r.body.login_code, /^DAR-\d{4}$/);
     assert.strictEqual((await s.agent.get('/api/auth/me')).status, 401);
     assert.strictEqual((await h.request().post('/api/auth/login').send({ code: h.codeFor('teacherA') })).status, 401);
     await h.loginWithCode(r.body.login_code);
@@ -69,7 +69,7 @@ test.describe('authentication', () => {
     const codes = [];
     for (let i = 0; i < 20; i++) codes.push((await p.post(`/api/users/${ids.auditor}/login-code`).send({})).body.login_code);
     const students = new Set((await h.db.query('SELECT student_no FROM students')).rows.map((r) => r.student_no.slice(4)));
-    assert.ok(codes.every((c) => /^\d{4}$/.test(c) && !students.has(c)));
+    assert.ok(codes.every((c) => /^DAR-\d{4}$/.test(c) && !students.has(c.slice(4))));
     await h.setCode('auditor1');
   });
 
@@ -514,7 +514,7 @@ test.describe('account types managed by the super administrator', () => {
     assert.strictEqual((await p.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] })).body.error.code, 'cannot_assign_privileged_role');
     const u = await sa.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] });
     assert.strictEqual(u.status, 201);
-    assert.match(u.body.login_code, /^\d{4}$/);
+    assert.match(u.body.login_code, /^DAR-\d{4}$/);
     const secCode = u.body.login_code;
     let s = await h.loginWithCode(secCode);
     assert.strictEqual((await s.get('/api/students')).status, 200);

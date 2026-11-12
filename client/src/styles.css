@@ -671,5 +671,10 @@ tr.wk-low { background: #fff5f6; }
 .a4-info dd .a4-en { display: block; font-weight: 500; font-size: 0.8rem; color: var(--ink-3); }
 
 /* Code-only sign-in: one large, easy-to-type field */
-.input.login-code { font-size: 1.35rem; font-weight: 700; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; block-size: 54px; }
+.code-input { display: flex; align-items: stretch; border: 1px solid var(--line-strong, #cbd5e1); border-radius: 10px; background: #fff; overflow: hidden; }
+.code-input:focus-within { border-color: var(--gold-500); box-shadow: 0 0 0 3px rgb(229 155 36 / 25%); }
+.code-prefix { display: grid; place-items: center; padding-inline: 16px; background: var(--navy-800); color: #fff; font-weight: 800; font-size: 1.35rem; letter-spacing: 0.08em; }
+.code-input .input.login-code { border: 0; box-shadow: none; border-radius: 0; flex: 1; min-inline-size: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: 0.35em; text-align: center; block-size: 56px; }
 .input.login-code::placeholder { font-weight: 500; letter-spacing: 0.06em; color: var(--ink-3); opacity: 0.55; }
+
+.avatar .avatar-pic { inline-size: 100%; block-size: 100%; display: block; }

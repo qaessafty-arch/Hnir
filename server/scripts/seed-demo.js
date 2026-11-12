@@ -54,7 +54,7 @@ async function demoLoginCodes() {
         [username, loginCodeHash(code)]);
     }
   });
-  console.log(`Demo sign-in: first student ${DEMO_FIRST_STUDENT}; staff codes ${Object.entries(DEMO_CODES).map(([u, d]) => `${u.slice(5)}=${d}`).join(', ')}`);
+  console.log(`Demo sign-in: first student ${DEMO_FIRST_STUDENT}; staff codes ${Object.entries(DEMO_CODES).map(([u, d]) => `${u.slice(5)}=DAR-${d}`).join(', ')}`);
 }
 
 async function topUpDemo() {

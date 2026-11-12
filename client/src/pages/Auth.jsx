@@ -43,9 +43,9 @@ export function LoginPage() {
   const nav = useNavigate();
   const submit = async (e) => {
     e.preventDefault();
-    if (!code.trim()) return;
+    if (code.length !== 4) return;
     setBusy(true); setErr(null);
-    try { await login(normalizeDigits(code.trim())); nav('/', { replace: true }); }
+    try { await login(`DAR-${code}`); nav('/', { replace: true }); }
     catch (ex) { setErr(ex); }
     finally { setBusy(false); }
   };
@@ -57,10 +57,16 @@ export function LoginPage() {
       {err && <div className="alert alert-bad" role="alert" style={{ marginBlockEnd: 14 }}>{errorText(err)}</div>}
       <form onSubmit={submit} className="stack" noValidate>
         <Field label={t('loginCode')} hint={t('loginCodeHint')} required>
-          {(p) => <input {...p} className="input login-code" dir="ltr" autoComplete="username" autoCapitalize="characters" spellCheck={false} required autoFocus
-            placeholder="DAR-4821" value={code} onChange={(e) => setCode(e.target.value)} />}
+          {(p) => (
+            <div className="code-input" dir="ltr">
+              <span className="code-prefix" aria-hidden="true">DAR-</span>
+              <input {...p} className="input login-code" dir="ltr" autoComplete="username" inputMode="numeric" spellCheck={false} required autoFocus
+                placeholder="0000" maxLength={8} value={code}
+                onChange={(e) => setCode(normalizeDigits(e.target.value).toUpperCase().replace(/^DAR/, '').replace(/\D/g, '').slice(0, 4))} />
+            </div>
+          )}
         </Field>
-        <button className="btn btn-primary btn-block" disabled={busy || !code.trim()}><LogIn size={18} className="flip-rtl" />{busy ? t('signingIn') : t('signIn')}</button>
+        <button className="btn btn-primary btn-block" disabled={busy || code.length !== 4}><LogIn size={18} className="flip-rtl" />{busy ? t('signingIn') : t('signIn')}</button>
       </form>
     </AuthShell>
   );

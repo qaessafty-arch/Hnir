@@ -18,11 +18,11 @@ async function freeFourDigits(c) {
   throw Object.assign(new Error('no free 4-digit number left'), { status: 409, code: 'no_free_number' });
 }
 
-/** Issue a new staff sign-in code (4 random digits; replaces any previous one). Only its hash is stored. */
+/** Issue a new staff sign-in code, DAR + 4 random digits (replaces any previous one). Only a keyed hash of the digits is stored. */
 async function issueLoginCode(c, userId) {
-  const code = await freeFourDigits(c);
-  await c.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now(), updated_at = now() WHERE id = $1', [userId, loginCodeHash(code)]);
-  return code;
+  const digits = await freeFourDigits(c);
+  await c.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now(), updated_at = now() WHERE id = $1', [userId, loginCodeHash(digits)]);
+  return `DAR-${digits}`;
 }
 
 /**

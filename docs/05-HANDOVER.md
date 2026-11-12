@@ -301,9 +301,11 @@ The menu has 8 items. Start every day on **Home**.
 
 ## 15b. Sign-in by code only (school decision)
 
+The login box has a fixed `DAR-` prefix; people type only the 4 digits. Students without an uploaded photo show a neutral person picture (no initials).
+
 At the school's request there are **no passwords**:
 - **Students** type their student ID (`DAR-4821`, or only the 4 digits; lower case, spaces and Kurdish digits are accepted).
-- **Staff** type a personal 4-digit sign-in code issued by an administrator (*Staff → Accounts →* key button) or by `scripts/issue-login-code.js`. Only a hash is stored; issuing a new code ends the old one and signs the user out. A staff username is **not** a code.
+- **Staff** type a personal sign-in code in the same form, `DAR-` + 4 random digits, issued by an administrator (*Staff → Accounts →* key button) or by `scripts/issue-login-code.js`. Only a hash is stored; issuing a new code ends the old one and signs the user out. A staff username is **not** a code.
 - The super administrator still confirms with the authenticator app (MFA) if that is enabled in Settings.
 
 **Known consequence, accepted by the school:** codes are only 4 digits and student IDs are not secret, so anyone who knows or guesses a student's ID can open that student's grades and profile. Wrong attempts are limited to `LOGIN_FAIL_LIMIT` (30) per address per 15 minutes. Migrations `006_code_login.sql`, `007_random_ids.sql`.

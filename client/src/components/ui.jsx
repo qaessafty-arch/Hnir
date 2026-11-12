@@ -204,14 +204,25 @@ export function PageHead({ title, sub, children }) {
 /** Latin identifiers (student IDs, usernames) isolated so they render correctly inside RTL text. */
 export const Code = ({ children }) => <bdi dir="ltr" className="mono">{children}</bdi>;
 
+/** Picture shown until the school uploads the student's photo (instead of the first letter of the name). */
+function PersonPicture() {
+  return (
+    <svg className="avatar-pic" viewBox="0 0 64 64" focusable="false">
+      <rect width="64" height="64" fill="#e6ebf5" />
+      <circle cx="32" cy="25" r="12" fill="#9fb0cf" />
+      <path d="M9 64c1.5-13 11.2-21 23-21s21.5 8 23 21z" fill="#9fb0cf" />
+      <path d="M20 46.5c3.3-2.2 7.5-3.5 12-3.5s8.7 1.3 12 3.5L32 58z" fill="#e59b24" opacity=".9" />
+    </svg>
+  );
+}
+
 export function StudentAvatar({ student, size = '' }) {
   const [failed, setFailed] = useState(false);
-  const name = student?.full_name_ckb || student?.full_name_en || '?';
   return (
     <span className={`avatar ${size}`} aria-hidden="true">
       {student?.has_photo && !failed
         ? <img src={`/api/students/${student.id}/photo`} alt="" loading="lazy" onError={() => setFailed(true)} />
-        : name.trim().charAt(0)}
+        : <PersonPicture />}
     </span>
   );
 }
