@@ -36,7 +36,7 @@ For production, **do not seed demo data**. Create the first administrator with `
 
 ```bash
 createdb -O darwaza darwaza_test
-npm test --prefix server                       # 40 unit + integration/security tests (real PostgreSQL)
+npm test --prefix server                       # 41 unit + integration/security tests (real PostgreSQL)
 node e2e/smoke.js http://localhost:3000 out    # browser test: roles × languages × viewports (needs demo data)
 node e2e/pwa.js http://localhost:3000          # installable-app checks (manifest, service worker, offline, no data cached)
 node ops/loadtest.js http://localhost:3000 1000 30   # load test (separate DB seeded with 1000 students, LOGIN_RATE_LIMIT raised)
