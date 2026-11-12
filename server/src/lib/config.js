@@ -24,7 +24,13 @@ module.exports = {
   encryptionKey: encKey,
   uploadDir: process.env.UPLOAD_DIR || require('path').resolve(__dirname, '../../data/uploads'),
   trustProxy: process.env.TRUST_PROXY || (isProd ? '1' : 'loopback'),
-  publicOrigin: process.env.PUBLIC_ORIGIN || process.env.RENDER_EXTERNAL_URL || null, // e.g. https://grades.darwaza.school (Render sets RENDER_EXTERNAL_URL)
+  // Origins accepted by the CSRF Origin check. PUBLIC_ORIGIN for self-hosting; hosting platforms add their own URLs.
+  allowedOrigins: [
+    process.env.PUBLIC_ORIGIN, process.env.RENDER_EXTERNAL_URL,
+    ...['VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL', 'VERCEL_URL'].map((k) => (process.env[k] ? `https://${process.env[k]}` : null)),
+  ].filter(Boolean),
+  // statement_timeout as a connection startup parameter; set PG_STATEMENT_TIMEOUT=0 behind PgBouncer-style poolers that reject it.
+  pgStatementTimeout: Number(process.env.PG_STATEMENT_TIMEOUT ?? 15000),
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProd,
   logLevel: process.env.LOG_LEVEL || (env === 'test' ? 'silent' : 'info'),
   clientDist: process.env.CLIENT_DIST || require('path').resolve(__dirname, '../../../client/dist'),

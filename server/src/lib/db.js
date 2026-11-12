@@ -15,7 +15,7 @@ const pool = new Pool({
   max: config.dbPoolMax,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
-  statement_timeout: 15_000,
+  ...(config.pgStatementTimeout > 0 ? { statement_timeout: config.pgStatementTimeout } : {}),
   application_name: 'darwaza-sms',
 });
 pool.on('error', (err) => logger.error({ err }, 'idle pg client error'));

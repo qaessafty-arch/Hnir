@@ -102,7 +102,7 @@ function csrfProtection(req, _res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const origin = req.get('origin');
   if (origin) {
-    const allowed = config.publicOrigin ? [config.publicOrigin] : [`${req.protocol}://${req.get('host')}`];
+    const allowed = config.allowedOrigins.length ? config.allowedOrigins : [`${req.protocol}://${req.get('host')}`];
     if (!allowed.includes(origin)) return next(forbidden('bad_origin'));
   }
   if (!req.session) return next(); // unauthenticated endpoints (login/reset) rely on SameSite + Origin
