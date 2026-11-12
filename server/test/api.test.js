@@ -10,32 +10,64 @@ test.after(async () => { await h.db.pool.end(); });
 
 // ---------------- Authentication ----------------
 test.describe('authentication', () => {
-  test('rejects wrong password with generic error, no user enumeration', async () => {
-    const a = await h.request().post('/api/auth/login').send({ username: 'principal1', password: 'nope' });
-    const b = await h.request().post('/api/auth/login').send({ username: 'nobody', password: 'nope' });
+  test('sign-in is by code only: unknown codes get one generic error', async () => {
+    const a = await h.request().post('/api/auth/login').send({ code: 'NOPE1-NOPE2' });
+    const b = await h.request().post('/api/auth/login').send({ code: 'DAR-9999' });
     assert.strictEqual(a.status, 401); assert.strictEqual(b.status, 401);
     assert.deepStrictEqual(a.body, b.body);
+    assert.strictEqual(a.body.error.code, 'unknown_login_code');
+    // Passwords are not accepted any more.
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ username: 'principal1', password: h.PW })).status, 400);
+  });
+
+  test('students sign in with their student ID; the ID is normalised (case, spaces, Eastern Arabic digits)', async () => {
+    for (const code of ['DAR-9001', 'dar-9001', ' dar 9001 ', 'DAR9001', 'DAR-٩٠٠١']) {
+      const r = await h.request().post('/api/auth/login').send({ code });
+      assert.strictEqual(r.status, 200, code);
+    }
+    const s = await h.loginWithCode('DAR-9001');
+    assert.deepStrictEqual(s.me.user.roles, ['student']);
+  });
+
+  test('staff cannot sign in with their username; only their secret code works, and a new code replaces the old one', async () => {
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ code: 'teacherA' })).status, 401);
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ code: 'principal1' })).status, 401);
+    const s = await h.login('teacherA');
+    assert.ok(s.me.user.roles.includes('teacher'));
+    // The principal issues a new code: the old one stops working and old sessions end.
+    const p = await h.login('principal1');
+    const r = await p.post(`/api/users/${ids.teacherAUser}/login-code`).send({});
+    assert.match(r.body.login_code, /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/);
+    assert.strictEqual((await s.agent.get('/api/auth/me')).status, 401);
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ code: h.codeFor('teacherA') })).status, 401);
+    await h.loginWithCode(r.body.login_code.toLowerCase());
+    // Only a hash is stored.
+    const row = await h.db.query('SELECT login_code_hash FROM users WHERE id = $1', [ids.teacherAUser]);
+    assert.ok(row.rows[0].login_code_hash && !row.rows[0].login_code_hash.includes(r.body.login_code));
+    await h.setCode('teacherA');
+    // Students have no staff code to issue.
+    assert.strictEqual((await p.post(`/api/users/${(await h.db.query("SELECT id FROM users WHERE username='DAR-9001'")).rows[0].id}/login-code`).send({})).status, 404);
+  });
+
+  test('a staff account that also has the student role cannot be entered with a student ID', async () => {
+    const uid = await h.mkUser('DAR-9050', ['student', 'teacher']);
+    assert.ok(uid);
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ code: 'DAR-9050' })).status, 401);
+  });
+
+  test('disabled accounts cannot sign in', async () => {
+    await h.mkUser('gone1', ['teacher']);
+    await h.db.query("UPDATE users SET status='disabled' WHERE username='gone1'");
+    assert.strictEqual((await h.request().post('/api/auth/login').send({ code: h.codeFor('gone1') })).status, 401);
   });
 
   test('session cookie is HttpOnly + SameSite=Strict, and a new id is issued on every login', async () => {
-    const r1 = await h.request().post('/api/auth/login').send({ username: 'auditor1', password: h.PW });
-    const r2 = await h.request().post('/api/auth/login').send({ username: 'auditor1', password: h.PW });
+    const r1 = await h.request().post('/api/auth/login').send({ code: h.codeFor('auditor1') });
+    const r2 = await h.request().post('/api/auth/login').send({ code: h.codeFor('auditor1') });
     const c1 = r1.headers['set-cookie'].find((c) => c.startsWith('dps_sid='));
     const c2 = r2.headers['set-cookie'].find((c) => c.startsWith('dps_sid='));
     assert.match(c1, /HttpOnly/); assert.match(c1, /SameSite=Strict/);
     assert.notStrictEqual(c1.split(';')[0], c2.split(';')[0]);
-  });
-
-  test('passwords are stored as argon2id hashes', async () => {
-    const r = await h.db.query("SELECT password_hash FROM users WHERE username='principal1'");
-    assert.match(r.rows[0].password_hash, /^\$argon2id\$/);
-  });
-
-  test('account locks after repeated failures', async () => {
-    await h.mkUser('locky', ['teacher']);
-    for (let i = 0; i < 5; i++) await h.request().post('/api/auth/login').send({ username: 'locky', password: 'bad' });
-    const r = await h.request().post('/api/auth/login').send({ username: 'locky', password: h.PW });
-    assert.strictEqual(r.status, 423);
   });
 
   test('state-changing requests require the CSRF token', async () => {
@@ -54,18 +86,6 @@ test.describe('authentication', () => {
     await s.post('/api/auth/logout').send({});
     const r = await h.request().get('/api/auth/me').set('Cookie', cookie);
     assert.strictEqual(r.status, 401);
-  });
-
-  test('forced password change blocks other endpoints and enforces policy', async () => {
-    await h.mkUser('newbie', ['teacher'], { mustChange: true });
-    const s = await h.login('newbie');
-    assert.strictEqual((await s.get('/api/dashboard/teacher')).body.error.code, 'password_change_required');
-    const weak = await s.post('/api/auth/password').send({ currentPassword: h.PW, newPassword: 'short' });
-    assert.strictEqual(weak.body.error.code, 'password_too_short');
-    const ok = await s.post('/api/auth/password').send({ currentPassword: h.PW, newPassword: 'Brand-New-Pass-42' });
-    assert.strictEqual(ok.status, 200);
-    // Old session was revoked and a fresh one issued on the agent.
-    assert.strictEqual((await s.agent.get('/api/dashboard/teacher')).status, 200);
   });
 
   test('MFA: privileged role must enrol, then must verify TOTP at each login', async () => {
@@ -91,17 +111,6 @@ test.describe('authentication', () => {
     assert.strictEqual((await s2.agent.get('/api/users')).status, 200);
   });
 
-  test('admin-issued reset token works exactly once', async () => {
-    const p = await h.login('principal1');
-    const uid = (await h.db.query("SELECT id FROM users WHERE username='teacherB'")).rows[0].id;
-    const t = await p.post(`/api/users/${uid}/reset-token`).send({});
-    const r1 = await h.request().post('/api/auth/reset-password').send({ token: t.body.token, newPassword: 'Reset-Pass-1234' });
-    assert.strictEqual(r1.status, 200);
-    const r2 = await h.request().post('/api/auth/reset-password').send({ token: t.body.token, newPassword: 'Reset-Pass-5678' });
-    assert.strictEqual(r2.body.error.code, 'invalid_or_expired_token');
-    await h.login('teacherB', 'Reset-Pass-1234');
-    await h.db.query("UPDATE users SET password_hash = (SELECT password_hash FROM users WHERE username='teacherA') WHERE username='teacherB'");
-  });
 });
 
 // ---------------- Authorization / isolation ----------------
@@ -316,7 +325,7 @@ test.describe('injection and upload safety', () => {
     const payload = '<img src=x onerror=alert(1)>';
     const r = await reg.post('/api/students').send({ full_name_ckb: payload, full_name_en: '=HYPERLINK("http://x")', section_id: ids.secA });
     assert.strictEqual(r.status, 201);
-    assert.match(r.body.initial_password, /^[A-Za-z2-9]{10}$/);
+    assert.match(r.body.username, /^DAR-\d{4}$/); assert.strictEqual(r.body.initial_password, undefined);
     const g = await reg.get(`/api/students/${r.body.id}`);
     assert.strictEqual(g.headers['content-type'], 'application/json; charset=utf-8');
     assert.strictEqual(g.body.full_name_ckb, payload);
@@ -385,20 +394,22 @@ test.describe('bulk import', () => {
     assert.strictEqual((await h.db.query('SELECT count(*)::int n FROM students')).rows[0].n, before);
     const ok = await reg.post('/api/students/import/commit').send({ yearId: ids.year, rows: [rows[0], { full_name_ckb: 'دیار', grade_level: 10, section: 'b' }] });
     assert.strictEqual(ok.status, 201); assert.strictEqual(ok.body.created.length, 2);
-    assert.ok(ok.body.created.every((c) => c.initial_password && /^DAR-\d{4}$/.test(c.username)));
+    assert.ok(ok.body.created.every((c) => /^DAR-\d{4}$/.test(c.username)));
+    // Imported students can sign in straight away with their ID.
+    await h.loginWithCode(ok.body.created[0].username);
   });
 });
 
 test.describe('rate limiting', () => {
-  test('repeated logins for one account are throttled with 429 (per IP+username)', async () => {
+  test('repeated sign-in attempts from one address are throttled with 429', async () => {
     process.env.TEST_RATE_LIMIT = '1';
     try {
       let last;
-      for (let i = 0; i < 12; i++) last = await h.request().post('/api/auth/login').send({ username: 'ratelimited-user', password: 'x' });
+      for (let i = 0; i < 305; i++) {
+        last = await h.request().post('/api/auth/login').send({ code: `GUESS-${i}` });
+        if (last.status === 429) break;
+      }
       assert.strictEqual(last.status, 429);
-      // A different account from the same IP is not blocked by the per-account limiter.
-      const other = await h.request().post('/api/auth/login').send({ username: 'someone-else', password: 'x' });
-      assert.strictEqual(other.status, 401);
     } finally { delete process.env.TEST_RATE_LIMIT; }
   });
 });
@@ -479,8 +490,9 @@ test.describe('account types managed by the super administrator', () => {
     assert.strictEqual((await p.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] })).body.error.code, 'cannot_assign_privileged_role');
     const u = await sa.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] });
     assert.strictEqual(u.status, 201);
-    await h.db.query("UPDATE users SET password_hash = (SELECT password_hash FROM users WHERE username='principal1'), must_change_password=false WHERE username='sec1'");
-    let s = await h.login('sec1');
+    assert.match(u.body.login_code, /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/);
+    const secCode = u.body.login_code;
+    let s = await h.loginWithCode(secCode);
     assert.strictEqual((await s.get('/api/students')).status, 200);
     assert.strictEqual((await s.post('/api/students').send({ full_name_ckb: 'x' })).status, 403);   // view only
     assert.strictEqual((await s.get('/api/analytics')).status, 200);
@@ -489,16 +501,16 @@ test.describe('account types managed by the super administrator', () => {
     const upd = await sa.put(`/api/roles/${key}`).send({ name_en: 'Secretary', name_ckb: 'سکرتێر', sections: { students: 'manage', results: 'hidden' } });
     assert.strictEqual(upd.status, 200);
     assert.strictEqual((await s.agent.get('/api/students')).status, 401, 'changing a type signs its users out');
-    s = await h.login('sec1');
+    s = await h.loginWithCode(secCode);
     assert.strictEqual((await s.post('/api/students').send({ full_name_ckb: 'From secretary' })).status, 201);
     assert.strictEqual((await s.get('/api/analytics')).status, 403);
     // Suspend: signed out and cannot sign in.
     await sa.post(`/api/roles/${key}/status`).send({ active: false });
     assert.strictEqual((await s.agent.get('/api/students')).status, 401);
-    const blocked = await h.request().post('/api/auth/login').send({ username: 'sec1', password: h.PW });
+    const blocked = await h.request().post('/api/auth/login').send({ code: secCode });
     assert.strictEqual(blocked.body.error.code, 'account_type_suspended');
     await sa.post(`/api/roles/${key}/status`).send({ active: true });
-    await h.login('sec1');
+    await h.loginWithCode(secCode);
     // Delete is refused while users have it, allowed after.
     assert.strictEqual((await sa.delete(`/api/roles/${key}`)).body.error.code, 'role_has_users');
     const uid = (await h.db.query("SELECT id FROM users WHERE username='sec1'")).rows[0].id;

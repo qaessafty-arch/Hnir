@@ -6,7 +6,8 @@ const fs = require('fs');
 const BASE = process.argv[2] || 'http://localhost:3000';
 const OUT = process.argv[3] || 'e2e-shots';
 fs.mkdirSync(OUT, { recursive: true });
-const PW = 'Passw0rd!demo';
+// Sign-in is by code only: students type their ID, demo staff use DEMO codes (e.g. demo.principal → PRINCIPAL-DEMO).
+const codeOf = (user) => (user.startsWith('demo.') ? `${user.slice(5).toUpperCase()}-DEMO` : user);
 const problems = [];
 
 async function session(browser, user, { lang = 'ckb', viewport = { width: 1366, height: 860 } } = {}) {
@@ -17,8 +18,7 @@ async function session(browser, user, { lang = 'ckb', viewport = { width: 1366, 
   page.on('pageerror', (e) => problems.push(`[${user} ${lang}] pageerror: ${e.message}`));
   page.on('response', (r) => { if (r.status() >= 500) problems.push(`[${user}] ${r.status()} ${r.url()}`); });
   await page.goto(`${BASE}/login`);
-  await page.fill('input[autocomplete=username]', user);
-  await page.fill('input[autocomplete=current-password]', PW);
+  await page.fill('input[autocomplete=username]', codeOf(user));
   await page.click('form button:not([type=button])');
   await page.waitForSelector('#main', { timeout: 10000 });
   return { ctx, page };
@@ -49,8 +49,7 @@ async function shot(page, name, path) {
   p0.on('console', (m) => { if (m.type() === 'error' && !/401/.test(m.text())) problems.push(`login console: ${m.text()}`); });
   await p0.goto(`${BASE}/login`); await shot(p0, '01-login-ckb');
   await p0.click('text=English'); await shot(p0, '02-login-en');
-  await p0.fill('input[autocomplete=username]', 'demo.admin');
-  await p0.fill('input[autocomplete=current-password]', 'wrong-password');
+  await p0.fill('input[autocomplete=username]', 'WRONG-CODE');
   await p0.click('form button:not([type=button])');
   await p0.waitForSelector('.alert-bad'); await shot(p0, '03-login-error-en');
   await c0.close();

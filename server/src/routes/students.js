@@ -10,8 +10,6 @@ const { requirePerm } = require('../middleware/auth');
 const { assertCanViewStudent } = require('../lib/access');
 const { storeImage, resolveStored, MIME } = require('../lib/images');
 const { createAccount, nextStudentNo } = require('../lib/accounts');
-const { hashPassword } = require('../lib/passwords');
-const { generatePassword } = require('../lib/crypto');
 const { pgConflict } = require('./academic');
 
 const router = express.Router();
@@ -79,7 +77,7 @@ async function createStudent(c, b, sectionId) {
     [acct.userId, studentNo, b.full_name_ckb, b.full_name_en, b.date_of_birth ?? null, b.gender ?? null,
       b.guardian_name, b.guardian_phone, b.address, b.legacy_code ?? null]);
   if (sectionId) await enrollInSection(c, r.rows[0].id, sectionId);
-  return { id: r.rows[0].id, student_no: studentNo, username: studentNo, initial_password: acct.initialPassword };
+  return { id: r.rows[0].id, student_no: studentNo, username: studentNo };
 }
 
 router.post('/', requirePerm('students.write'), ah(async (req, res) => {
@@ -89,7 +87,7 @@ router.post('/', requirePerm('students.write'), ah(async (req, res) => {
     await audit(req, 'student.create', { entityType: 'student', entityId: s.id, details: { student_no: s.student_no, section_id: b.section_id }, client: c });
     return s;
   });
-  // The initial password is returned exactly once so the registrar can hand it over.
+  // Students sign in with their student ID only (no password).
   res.status(201).json(out);
 }));
 
@@ -154,22 +152,6 @@ router.post('/:id/enroll', requirePerm('students.write'), ah(async (req, res) =>
     await audit(req, 'student.enroll', { entityType: 'student', entityId: sid, details: b, client: c });
   });
   res.json({ ok: true });
-}));
-
-router.post('/:id/credentials', requirePerm('students.write'), ah(async (req, res) => {
-  const sid = parse(id, req.params.id);
-  const pw = generatePassword(10);
-  const hash = await hashPassword(pw);
-  const out = await db.tx(async (c) => {
-    const s = await c.query('SELECT user_id, student_no FROM students WHERE id = $1', [sid]);
-    if (!s.rowCount || !s.rows[0].user_id) throw notFound();
-    await c.query(`UPDATE users SET password_hash=$2, must_change_password=true, failed_login_count=0, locked_until=NULL,
-                   password_changed_at=now() WHERE id=$1`, [s.rows[0].user_id, hash]);
-    await c.query('DELETE FROM sessions WHERE user_id = $1', [s.rows[0].user_id]);
-    await audit(req, 'student.credentials_reset', { entityType: 'student', entityId: sid, client: c });
-    return { username: s.rows[0].student_no, initial_password: pw };
-  });
-  res.json(out);
 }));
 
 router.post('/:id/photo', requirePerm('students.write'), upload.single('photo'), ah(async (req, res) => {

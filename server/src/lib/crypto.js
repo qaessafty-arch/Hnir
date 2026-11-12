@@ -36,4 +36,19 @@ function generatePassword(length = 10) {
   return out;
 }
 
-module.exports = { randomToken, sha256, encrypt, decrypt, safeEqual, generatePassword };
+/** Staff sign-in code: 10 characters from an unambiguous 32-letter alphabet (50 bits), shown as XXXXX-XXXXX. */
+function generateLoginCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += alphabet[crypto.randomInt(alphabet.length)];
+  return `${out.slice(0, 5)}-${out.slice(5)}`;
+}
+/** Canonical form used for lookup: upper case, no spaces or dashes; Eastern Arabic digits normalised. */
+function normalizeLoginCode(code) {
+  return String(code || '')
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .toUpperCase().replace(/[\s\-_]/g, '');
+}
+
+module.exports = { randomToken, sha256, encrypt, decrypt, safeEqual, generatePassword, generateLoginCode, normalizeLoginCode };

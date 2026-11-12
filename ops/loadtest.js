@@ -18,11 +18,11 @@ const autocannon = require('autocannon');
 const BASE = process.argv[2] || 'http://localhost:3000';
 const N = Number(process.argv[3] || 1000);
 const DURATION = Number(process.argv[4] || 30);
-const PW = 'Passw0rd!demo';
 
+const codeOf = (user) => (user.startsWith('demo.') ? `${user.slice(5).toUpperCase()}-DEMO` : user);
 async function login(username) {
   const t0 = performance.now();
-  const r = await fetch(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, password: PW }) });
+  const r = await fetch(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: codeOf(username) }) });
   const ms = performance.now() - t0;
   if (r.status !== 200) throw new Error(`login ${username}: ${r.status}`);
   const cookie = r.headers.get('set-cookie').split(';')[0];

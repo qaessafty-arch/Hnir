@@ -4,7 +4,7 @@ import { useI18n } from './i18n';
 import Layout from './components/Layout';
 import Logo from './components/Logo';
 import { ErrorState } from './components/ui';
-import { ForcePasswordPage, LoginPage, MfaEnrollPage, MfaVerifyPage, ResetPage } from './pages/Auth';
+import { LoginPage, MfaEnrollPage, MfaVerifyPage } from './pages/Auth';
 import Home from './pages/Home';
 import ApprovalsPage from './pages/Approvals';
 import ResultsPage from './pages/Results';
@@ -46,7 +46,6 @@ export default function App() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route path="/reset" element={<ResetPage />} />
           <Route path="*" element={<LoginPage />} />
         </Routes>
       </BrowserRouter>
@@ -54,7 +53,6 @@ export default function App() {
   }
   if (mfaState === 'pending_verify') return <MfaVerifyPage />;
   if (mfaState === 'pending_enroll') return <MfaEnrollPage />;
-  if (user.must_change_password) return <ForcePasswordPage />;
   // Students get the school-header layout of the reference design (no admin sidebar).
   const studentOnly = user.permissions.every((p) => p === 'self.grades') && user.permissions.length > 0;
   if (studentOnly) {

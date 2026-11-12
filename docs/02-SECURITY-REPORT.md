@@ -17,6 +17,12 @@ Status meanings:
 | Sessions | Theft, fixation, CSRF | HttpOnly + SameSite=Strict cookie, `__Host-` prefix and `Secure` in production, rotation on login / MFA / password change, CSRF token + Origin check |
 | Server | Injection, malicious uploads | Parameterised SQL only, zod validation, magic-byte upload check, strict CSP |
 
+## 2.2a Sign-in by code only (changed at the school's request)
+
+Passwords were removed. Students sign in with their student ID; staff sign in with a personal secret code (10 characters from a 32-letter alphabet, 50 bits; SHA-256 stored; new code revokes the old one and all sessions; staff usernames are not accepted). Accounts with any non-student role cannot sign in with a student ID. A per-IP rate limit (`LOGIN_RATE_LIMIT`, 300 per 15 min) remains. MFA for configured roles is unchanged. Tested in `api.test.js` › *authentication*.
+
+**Risk accepted by the school:** student IDs are sequential and not secret, so anyone who knows or guesses an ID (e.g. `DAR-0002`) can view that student's grades and profile. Rows 1–5 and 11 below (password hashing, policy, lockout, reset) describe the previous password design and no longer apply to sign-in. Recommendation if this becomes a concern: give students a secret code too (the staff mechanism already supports it).
+
 ## 2.2 Controls
 
 | # | Control | Implementation | Status | Evidence |

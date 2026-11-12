@@ -31,8 +31,8 @@ export function AuthProvider({ children }) {
     can: (...perms) => !!state.user && perms.some((p) => state.user.permissions.includes(p)),
     hasRole: (r) => !!state.user?.roles.includes(r),
     refresh,
-    async login(username, password) {
-      const r = await api('/auth/login', { method: 'POST', body: { username, password } });
+    async login(code) {
+      const r = await api('/auth/login', { method: 'POST', body: { code } });
       const me = await refresh();
       if (me?.user?.preferred_lang) setLang(me.user.preferred_lang);
       return r;

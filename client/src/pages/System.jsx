@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { api, normalizeDigits } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { Empty, ErrorState, Field, Loading, Modal, PageHead, Pagination, SkeletonRows, useToast } from '../components/ui';
-import { MfaEnroll, PasswordForm } from './Auth';
+import { MfaEnroll } from './Auth';
 
 export function AuditPage() {
   const { t, fmtDateTime } = useI18n();
@@ -138,7 +138,6 @@ export function AccountPage() {
     <>
       <PageHead title={t('accountTitle')} sub={`${user.full_name} · ${user.username}`} />
       <div className="grid grid-2">
-        <section className="card"><div className="card-head"><h2>{t('changePassword')}</h2></div><div className="card-body"><PasswordForm onDone={async () => { toast(t('passwordChanged')); await refresh(); }} /></div></section>
         <section className="card"><div className="card-head"><h2><ShieldCheck size={18} /> {t('mfaTitle')}</h2></div><div className="card-body stack">
           {user.mfa_enabled ? <div className="alert alert-ok">{t('mfaEnabled')}</div> : (
             <>

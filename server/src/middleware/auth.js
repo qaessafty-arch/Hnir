@@ -76,15 +76,12 @@ async function loadSession(req, _res, next) {
 }
 
 const MFA_ALLOWED = new Set(['/api/auth/me', '/api/auth/logout', '/api/auth/mfa/verify', '/api/auth/mfa/setup', '/api/auth/mfa/enable']);
-const PW_ALLOWED = new Set(['/api/auth/me', '/api/auth/logout', '/api/auth/password']);
 
 function requireAuth(req, _res, next) {
   if (!req.user) return next(unauthorized());
   const path = req.baseUrl + req.path;
   if (req.session.mfaState === 'pending_verify' || req.session.mfaState === 'pending_enroll') {
     if (!MFA_ALLOWED.has(path)) return next(forbidden(req.session.mfaState === 'pending_verify' ? 'mfa_required' : 'mfa_enrollment_required'));
-  } else if (req.user.must_change_password && !PW_ALLOWED.has(path)) {
-    return next(forbidden('password_change_required'));
   }
   next();
 }

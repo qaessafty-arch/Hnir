@@ -170,7 +170,7 @@ sudo mkdir -p /etc/darwaza /var/lib/darwaza/uploads /var/backups/darwaza
 sudo cp server/.env.example /etc/darwaza/darwaza.env   # edit: DATABASE_URL, APP_ENCRYPTION_KEY (openssl rand -base64 48), PUBLIC_ORIGIN …
 sudo chmod 600 /etc/darwaza/darwaza.env
 
-# 4. Database schema + first administrator (prints a one-time password)
+# 4. Database schema + first administrator (prints the administrator's secret sign-in code)
 cd server && set -a && . /etc/darwaza/darwaza.env && set +a
 node src/migrate.js
 node scripts/bootstrap-admin.js admin "School Administrator"
@@ -183,7 +183,7 @@ curl -s https://grades.example.school/api/health      # {"ok":true}
 # 6. Backups (cron, daily) — see §10
 ```
 
-First sign-in as `admin`: change the password, then enrol MFA (required).
+First sign-in: type the printed sign-in code, then enrol MFA (required for the super administrator). Lost code: `node server/scripts/issue-login-code.js admin`.
 
 **Upgrades:** `git pull && npm ci … && npm run build --prefix client && systemctl restart darwaza`. Migrations run automatically at start, under a lock, one transaction per file. Take a backup first.
 
@@ -271,9 +271,9 @@ The menu has 8 items. Start every day on **Home**.
    - *Class results:* the full class table to print.
    - *All grades:* every grade, with filters.
    - *Report cards:* find a student and print.
-4. **Students:** search, add (or *Import Students* from a CSV), open a student to edit, change class, reset their password or archive them.
+4. **Students:** search, add (or *Import Students* from a CSV), open a student to edit, change class or archive them. Students sign in with their ID; there is nothing to reset.
 5. **Grade sheets:** all sheets by class, subject and status. Principals can also enter or correct grades here; corrections after publishing need a reason.
-6. **Staff:** *Teachers* (add, edit), *Who teaches what* (assign teacher → class → subject), *Accounts* (other staff accounts, password reset codes, MFA reset, disable).
+6. **Staff:** *Teachers* (add, edit), *Who teaches what* (assign teacher → class → subject), *Accounts* (other staff accounts, **issue a new sign-in code** (the key button; the old code stops working), MFA reset, disable).
 7. **School setup** (once a year): *Years & terms* (add the year and terms, set the current year, open or close grade entry), *Classes*, *Subjects* (max score, pass mark).
 8. **System:** *Account types* (super administrator: show or hide each section per account type — Hidden / View only / Full access; create, suspend or delete custom types), *Settings* (grading policy, security policy, school name, backup status) and *Activity history* (who did what).
 
@@ -283,7 +283,7 @@ The menu has 8 items. Start every day on **Home**.
 - Grade sheets can be filtered by year and **week**; inside a sheet use *Find a student* to jump to one student.
 
 
-1. Sign in, change your first password, and open **My Classes** on the dashboard.
+1. Sign in with your personal sign-in code and open **My Classes** on the dashboard.
 2. Click **Enter grades** on a class/subject → **New grade sheet** → choose the term and category, enter the week number (the title fills in automatically) and the max score.
 3. Type the scores. **Enter** moves to the next student, ↑/↓ move between rows. Kurdish digits work. Invalid scores turn red with the reason.
    - For absent students choose **Missing**; for students with permission choose **Excused**.
@@ -294,14 +294,23 @@ The menu has 8 items. Start every day on **Home**.
 
 ## 15. Student guide
 
-- Sign in with your student ID (e.g. `DAR-0001`) and the password from the school office, then choose a new password.
+- Sign in by typing only your student ID (e.g. `DAR-0001`). No password is needed.
 - **My Grades** opens your **Weekly Student Grade Card**: overall performance, weekly average, behavior evaluation, and a table of every subject for the chosen week (obtained mark, maximum, percentage, teacher comment). Use the week arrows or choose a year/term/week. *Performance history* shows your weekly averages and each subject's progress. **Print grade card** opens a separate A4 report card ready to print or save as PDF.
 - It also shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback. Choose a term or the whole year. **Print** gives an A4 report card.
-- Only grades the school has made visible are shown. Forgot your password? Ask the school office for a reset code and use *I have a reset code* on the login page.
+- Only grades the school has made visible are shown.
+
+## 15b. Sign-in by code only (school decision)
+
+At the school's request there are **no passwords**:
+- **Students** type their student ID (`DAR-0001`; lower case, spaces and Kurdish digits are accepted).
+- **Staff** type a personal secret sign-in code (`XXXXX-XXXXX`) issued by an administrator (*Staff → Accounts →* key button) or by `scripts/issue-login-code.js`. Only a hash is stored; issuing a new code ends the old one and signs the user out. A staff username is **not** a code.
+- The super administrator still confirms with the authenticator app (MFA) if that is enabled in Settings.
+
+**Known consequence, accepted by the school:** student IDs are not secret, so anyone who knows or guesses a student's ID can open that student's grades and profile. Migration `006_code_login.sql`.
 
 ## 15a. Student IDs
 
-Student IDs are permanent and use the format **DAR-0001** (migration 005 renumbered existing students in creation order). A student's username is their ID. If real students already had accounts, give them their new ID; their passwords are unchanged.
+Student IDs are permanent and use the format **DAR-0001** (migration 005 renumbered existing students in creation order). A student's username is their ID, and the ID is all they type to sign in.
 
 ## 16. Installable app (PWA)
 

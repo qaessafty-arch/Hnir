@@ -7,29 +7,22 @@ const db = require('../lib/db');
 const config = require('../lib/config');
 const { z, parse } = require('../lib/validate');
 const { ah, unauthorized, badRequest, forbidden } = require('../lib/errors');
-const { hashPassword, verifyPassword, dummyVerify, passwordPolicyError } = require('../lib/passwords');
-const { encrypt, decrypt, sha256 } = require('../lib/crypto');
+const { encrypt, decrypt, sha256, normalizeLoginCode } = require('../lib/crypto');
 const { audit } = require('../lib/audit');
 const { getSettings } = require('../lib/settings');
 const { createSession, destroySession, requireAuth, loadUserAuthz } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Two layers: per IP+username (stops guessing one account) and a generous per-IP ceiling
-// (a whole school can sit behind one NAT address, so the IP limit must not block normal use).
-// Per-account lockout (users.failed_login_count) is the third layer and is shared across all instances.
+// Sign-in is by code only. Students type their student ID; staff type a secret 10-character code
+// (50 bits, so guessing is not feasible). A per-IP ceiling slows bulk probing; it stays generous because
+// a whole school can sit behind one NAT address.
 const limitHandler = (_req, res) => res.status(429).json({ error: { code: 'too_many_attempts' } });
 const skipInTest = () => config.isTest && process.env.TEST_RATE_LIMIT !== '1';
-const loginAccountLimiter = rateLimit({
-  windowMs: 15 * 60_000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false,
-  keyGenerator: (req) => `${rateLimit.ipKeyGenerator(req.ip)}|${String(req.body?.username || '').toLowerCase().slice(0, 100)}`,
-  handler: limitHandler, skip: skipInTest,
-});
-const loginIpLimiter = rateLimit({
+const loginLimiter = rateLimit({
   windowMs: 15 * 60_000, limit: config.loginRateLimit, standardHeaders: 'draft-7', legacyHeaders: false,
   keyGenerator: (req) => rateLimit.ipKeyGenerator(req.ip), handler: limitHandler, skip: skipInTest,
 });
-const loginLimiter = [loginIpLimiter, loginAccountLimiter];
 const mfaLimiter = rateLimit({
   windowMs: 15 * 60_000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false,
   keyGenerator: (req) => `mfa:${req.session?.id || rateLimit.ipKeyGenerator(req.ip)}`,
@@ -46,44 +39,43 @@ function publicUser(req) {
   };
 }
 
+const STUDENT_ID = /^DAR(\d{1,6})$/;
+
 router.post('/login', loginLimiter, ah(async (req, res) => {
-  const body = parse(z.object({ username: z.string().trim().min(1).max(100), password: z.string().min(1).max(200) }), req.body);
-  const sec = (await getSettings()).security;
-  const { rows } = await db.query(
-    `SELECT id, username, password_hash, status, locked_until, failed_login_count, mfa_enabled
-       FROM users WHERE lower(username) = lower($1) AND deleted_at IS NULL`, [body.username]);
+  const body = parse(z.object({ code: z.string().trim().min(1).max(100) }), req.body);
+  const code = normalizeLoginCode(body.code);
+  const sid = STUDENT_ID.exec(code);
+  let rows;
+  if (sid) {
+    // Student ID: only accounts whose every role is "student" may sign in this way.
+    const studentNo = `DAR-${sid[1].padStart(4, '0')}`;
+    ({ rows } = await db.query(
+      `SELECT u.id, u.status, u.mfa_enabled FROM users u
+        WHERE u.username = $1 AND u.deleted_at IS NULL
+          AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key = 'student')
+          AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key <> 'student')`,
+      [studentNo]));
+  } else {
+    ({ rows } = await db.query(
+      'SELECT id, status, mfa_enabled FROM users WHERE login_code_hash = $1 AND deleted_at IS NULL', [sha256(code)]));
+  }
   const u = rows[0];
-  const fail = async (reason) => {
-    await audit(req, 'auth.login_failed', { entityType: 'user', entityId: u?.id, details: { username: body.username.slice(0, 100), reason } });
-    throw unauthorized('invalid_credentials');
-  };
-  if (!u) { await dummyVerify(body.password); return fail('unknown_user'); }
-  if (u.locked_until && new Date(u.locked_until) > new Date()) {
-    await dummyVerify(body.password);
-    await audit(req, 'auth.login_locked', { entityType: 'user', entityId: u.id });
-    return res.status(423).json({ error: { code: 'account_locked' } });
+  if (!u || u.status !== 'active') {
+    await audit(req, 'auth.login_failed', { entityType: 'user', entityId: u?.id, details: { kind: sid ? 'student_id' : 'code', reason: u ? 'disabled' : 'unknown_code' } });
+    throw unauthorized('unknown_login_code');
   }
-  const ok = await verifyPassword(u.password_hash, body.password);
-  if (!ok || u.status !== 'active') {
-    if (!ok) {
-      await db.query(
-        `UPDATE users SET failed_login_count = failed_login_count + 1,
-           locked_until = CASE WHEN failed_login_count + 1 >= $2 THEN now() + ($3 || ' minutes')::interval ELSE locked_until END
-         WHERE id = $1`, [u.id, sec.max_failed_logins, String(sec.lockout_minutes)]);
-    }
-    return fail(ok ? 'disabled' : 'bad_password');
-  }
+  const sec = (await getSettings()).security;
   const { roles } = await loadUserAuthz(u.id);
   if (roles.length === 0) {
     await audit(req, 'auth.login_blocked_suspended_type', { entityType: 'user', entityId: u.id, actorId: u.id });
     return res.status(403).json({ error: { code: 'account_type_suspended' } });
   }
-  await db.query('UPDATE users SET failed_login_count = 0, locked_until = NULL, last_login_at = now() WHERE id = $1', [u.id]);
+  await db.query('UPDATE users SET failed_login_count = 0, locked_until = NULL, must_change_password = false, last_login_at = now() WHERE id = $1', [u.id]);
   const mfaRequired = roles.some((r) => sec.mfa_required_roles.includes(r));
   const mfaState = u.mfa_enabled ? 'pending_verify' : mfaRequired ? 'pending_enroll' : 'none';
   await destroySession(req, res, { clearCookie: false }); // revoke any previous session; new cookie replaces it
   await createSession(res, req, u.id, mfaState);
-  await audit(req, 'auth.login', { entityType: 'user', entityId: u.id, actorId: u.id, details: { mfaState } });
+  await audit(req, 'auth.login', { entityType: 'user', entityId: u.id, actorId: u.id, details: { mfaState, kind: sid ? 'student_id' : 'code' } });
   res.json({ ok: true, mfa: mfaState });
 }));
 
@@ -101,45 +93,6 @@ router.get('/me', requireAuth, ah(async (req, res) => {
 router.patch('/me', requireAuth, ah(async (req, res) => {
   const b = parse(z.object({ preferred_lang: z.enum(['ckb', 'en']) }), req.body);
   await db.query('UPDATE users SET preferred_lang = $2, updated_at = now() WHERE id = $1', [req.user.id, b.preferred_lang]);
-  res.json({ ok: true });
-}));
-
-router.post('/password', requireAuth, ah(async (req, res) => {
-  const b = parse(z.object({ currentPassword: z.string().min(1).max(200), newPassword: z.string().min(1).max(200) }), req.body);
-  const { rows } = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
-  if (!(await verifyPassword(rows[0].password_hash, b.currentPassword))) throw badRequest('current_password_wrong');
-  const pe = passwordPolicyError(b.newPassword, { username: req.user.username });
-  if (pe) throw badRequest(pe);
-  if (await verifyPassword(rows[0].password_hash, b.newPassword)) throw badRequest('password_reused');
-  const hash = await hashPassword(b.newPassword);
-  await db.tx(async (c) => {
-    await c.query('UPDATE users SET password_hash=$2, must_change_password=false, password_changed_at=now(), updated_at=now() WHERE id=$1', [req.user.id, hash]);
-    // Revoke every session (including this one) and issue a new one — session rotation.
-    await c.query('DELETE FROM sessions WHERE user_id = $1', [req.user.id]);
-    await audit(req, 'auth.password_changed', { entityType: 'user', entityId: req.user.id, client: c });
-  });
-  await createSession(res, req, req.user.id, req.session.mfaState === 'verified' ? 'verified' : 'none');
-  res.json({ ok: true });
-}));
-
-// ---- Password reset via one-time token (issued by an administrator; see users.js) ----
-router.post('/reset-password', loginLimiter, ah(async (req, res) => {
-  const b = parse(z.object({ token: z.string().min(20).max(100), newPassword: z.string().min(1).max(200) }), req.body);
-  const { rows } = await db.query(
-    `SELECT t.id, t.user_id, u.username FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
-      WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now() AND u.status = 'active'`, [sha256(b.token)]);
-  if (!rows.length) throw badRequest('invalid_or_expired_token');
-  const pe = passwordPolicyError(b.newPassword, { username: rows[0].username });
-  if (pe) throw badRequest(pe);
-  const hash = await hashPassword(b.newPassword);
-  await db.tx(async (c) => {
-    const upd = await c.query('UPDATE password_reset_tokens SET used_at = now() WHERE id = $1 AND used_at IS NULL', [rows[0].id]);
-    if (!upd.rowCount) throw badRequest('invalid_or_expired_token');
-    await c.query(`UPDATE users SET password_hash=$2, must_change_password=false, failed_login_count=0, locked_until=NULL,
-                   password_changed_at=now(), updated_at=now() WHERE id=$1`, [rows[0].user_id, hash]);
-    await c.query('DELETE FROM sessions WHERE user_id = $1', [rows[0].user_id]);
-    await audit(req, 'auth.password_reset_completed', { entityType: 'user', entityId: rows[0].user_id, actorId: rows[0].user_id, client: c });
-  });
   res.json({ ok: true });
 }));
 

@@ -30,9 +30,9 @@ npm run build --prefix client && npm start --prefix server   # http://localhost:
 # or for UI work: npm run dev --prefix server  +  npm run dev --prefix client (http://localhost:5173)
 ```
 
-Demo accounts (dev only, password `Passw0rd!demo`): `demo.admin`, `demo.principal`, `demo.registrar`, `demo.auditor`, `demo.teacher1`…`6`, students `DAR-0001`….
+**Sign-in is by code only (no passwords).** Students type their student ID (`DAR-0001`). Staff type their personal secret sign-in code. Demo codes (dev only): `ADMIN-DEMO`, `PRINCIPAL-DEMO`, `REGISTRAR-DEMO`, `AUDITOR-DEMO`, `TEACHER1-DEMO`…`TEACHER6-DEMO`; students `DAR-0001`….
 
-For production, **do not seed demo data**. Create the first administrator with `node server/scripts/bootstrap-admin.js <username> "<Full Name>"`, then follow [deployment](docs/05-HANDOVER.md#8-deployment-production).
+For production, **do not seed demo data**. Create the first administrator with `node server/scripts/bootstrap-admin.js <username> "<Full Name>"` (prints their sign-in code; `node server/scripts/issue-login-code.js <username>` issues a new one), then follow [deployment](docs/05-HANDOVER.md#8-deployment-production).
 
 ## Tests
 

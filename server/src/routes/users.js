@@ -5,8 +5,7 @@ const { z, parse, id, text, optText, page } = require('../lib/validate');
 const { ah, notFound, badRequest, forbidden } = require('../lib/errors');
 const { audit } = require('../lib/audit');
 const { requirePerm, has } = require('../middleware/auth');
-const { createAccount, nextStaffNo } = require('../lib/accounts');
-const { randomToken, sha256 } = require('../lib/crypto');
+const { createAccount, issueLoginCode, nextStaffNo } = require('../lib/accounts');
 const { pgConflict } = require('./academic');
 
 const router = express.Router();
@@ -74,7 +73,7 @@ router.post('/', ah(async (req, res) => {
       await c.query('INSERT INTO teachers (user_id, staff_no, phone) VALUES ($1,$2,$3)', [acct.userId, await nextStaffNo(c), b.phone]);
     }
     await audit(req, 'user.create', { entityType: 'user', entityId: acct.userId, details: { username: b.username, roles: b.roles }, client: c });
-    return { id: acct.userId, username: b.username, initial_password: acct.initialPassword };
+    return { id: acct.userId, username: b.username, login_code: acct.loginCode };
   });
   res.status(201).json(out);
 }));
@@ -126,19 +125,20 @@ router.post('/:id/status', ah(async (req, res) => {
   res.json({ ok: true });
 }));
 
-router.post('/:id/reset-token', ah(async (req, res) => {
+// Issue a new secret sign-in code (staff). The old code stops working and all sessions end.
+router.post('/:id/login-code', ah(async (req, res) => {
   const uid = parse(id, req.params.id);
   await assertCanManage(req, uid);
-  const token = randomToken(32);
-  await db.tx(async (c) => {
-    const u = await c.query('SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL', [uid]);
+  const code = await db.tx(async (c) => {
+    const u = await c.query(`SELECT 1 FROM users u WHERE u.id = $1 AND u.deleted_at IS NULL
+      AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.key <> 'student')`, [uid]);
     if (!u.rowCount) throw notFound();
-    await c.query('UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [uid]);
-    await c.query(`INSERT INTO password_reset_tokens (user_id, token_hash, created_by, expires_at) VALUES ($1,$2,$3, now() + interval '24 hours')`,
-      [uid, sha256(token), req.user.id]);
-    await audit(req, 'user.reset_token_issued', { entityType: 'user', entityId: uid, client: c });
+    const out = await issueLoginCode(c, uid);
+    await c.query('DELETE FROM sessions WHERE user_id = $1', [uid]);
+    await audit(req, 'user.login_code_issued', { entityType: 'user', entityId: uid, client: c });
+    return out;
   });
-  res.json({ token, expires_in_hours: 24 });
+  res.json({ login_code: code });
 }));
 
 router.post('/:id/mfa-reset', ah(async (req, res) => {

@@ -131,7 +131,7 @@ export function UsersPage() {
                   <td><div className="actions">
                     <button type="button" className="btn btn-ghost btn-sm" title={t('edit')} aria-label={t('edit')} onClick={() => setEdit(u)}><Pencil size={15} /></button>
                     {!u.roles?.includes('student') && <button type="button" className="btn btn-ghost btn-sm" title={t('roles')} aria-label={t('roles')} onClick={() => setRolesFor(u)}><Star size={15} /></button>}
-                    <button type="button" className="btn btn-ghost btn-sm" title={t('issueReset')} aria-label={t('issueReset')} onClick={() => act(async () => setToken((await api(`/users/${u.id}/reset-token`, { method: 'POST', body: {} })).token))}><KeyRound size={15} /></button>
+                    {!u.roles?.every((r) => r === 'student') && <button type="button" className="btn btn-ghost btn-sm" title={t('newLoginCode')} aria-label={t('newLoginCode')} onClick={async () => { if (await confirm({ message: t('newLoginCodeConfirm'), danger: true })) act(async () => setToken((await api(`/users/${u.id}/login-code`, { method: 'POST', body: {} })).login_code)); }}><KeyRound size={15} /></button>}
                     {u.mfa_enabled && <button type="button" className="btn btn-ghost btn-sm" title={t('resetMfa')} aria-label={t('resetMfa')} onClick={async () => { if (await confirm({ message: t('resetMfaConfirm'), danger: true })) act(() => api(`/users/${u.id}/mfa-reset`, { method: 'POST', body: {} })); }}><ShieldOff size={15} /></button>}
                     {u.id !== me.id && (u.status === 'active'
                       ? <button type="button" className="btn btn-ghost btn-sm" title={t('disable')} aria-label={t('disable')} onClick={async () => { if (await confirm({ message: t('disableConfirm'), danger: true })) act(() => api(`/users/${u.id}/status`, { method: 'POST', body: { status: 'disabled' } })); }}><UserX size={15} /></button>
@@ -157,9 +157,8 @@ export function UsersPage() {
         fields={[{ name: 'roles', label: t('roles'), type: 'multi', options: assignable.map((r) => ({ value: r, label: nameOf(r) })) }]}
         onSubmit={async (v) => { await api(`/users/${rolesFor.id}/roles`, { method: 'PUT', body: { roles: v.roles } }); toast(t('saved')); setRolesFor(null); reload(); }} />}
       {creds && <CredentialsModal creds={creds} onClose={() => setCreds(null)} />}
-      {token && <Modal size="narrow" title={t('issueReset')} onClose={() => setToken(null)} footer={<button type="button" className="btn btn-primary" onClick={() => setToken(null)}>{t('close')}</button>}>
-        <p className="small" style={{ marginBlockEnd: 10 }}>{t('resetIssued')}</p><p style={{ wordBreak: 'break-all', userSelect: 'all' }}><Code>{token}</Code></p>
-        <p className="small muted" style={{ marginBlockStart: 10 }}><bdi dir="ltr">{window.location.origin}/reset</bdi></p></Modal>}
+      {token && <Modal size="narrow" title={t('newLoginCode')} onClose={() => setToken(null)} footer={<button type="button" className="btn btn-primary" onClick={() => setToken(null)}>{t('close')}</button>}>
+        <p className="small" style={{ marginBlockEnd: 10 }}>{t('newLoginCodeIssued')}</p><p style={{ fontSize: '1.4rem', letterSpacing: '0.08em', userSelect: 'all' }}><Code>{token}</Code></p></Modal>}
     </>
   );
 }

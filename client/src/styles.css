@@ -669,3 +669,7 @@ tr.wk-low { background: #fff5f6; }
 }
 .a4-summary strong.small-text { font-size: 1rem; }
 .a4-info dd .a4-en { display: block; font-weight: 500; font-size: 0.8rem; color: var(--ink-3); }
+
+/* Code-only sign-in: one large, easy-to-type field */
+.input.login-code { font-size: 1.35rem; font-weight: 700; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; block-size: 54px; }
+.input.login-code::placeholder { font-weight: 500; letter-spacing: 0.06em; color: var(--ink-3); opacity: 0.55; }

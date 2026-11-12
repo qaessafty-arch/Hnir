@@ -27,7 +27,6 @@ const check = (ok, msg) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`); if 
   // Sign in and load grades so /api responses pass through the service worker, then inspect the caches.
   await page.reload(); await page.waitForLoadState('networkidle');
   await page.fill('input[autocomplete=username]', 'DAR-0001');
-  await page.fill('input[autocomplete=current-password]', 'Passw0rd!demo');
   await page.click('form button:not([type=button])');
   await page.waitForSelector('#main'); await page.waitForLoadState('networkidle');
   const cached = await page.evaluate(async () => {

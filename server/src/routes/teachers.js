@@ -34,7 +34,7 @@ router.post('/', requirePerm('teachers.write'), ah(async (req, res) => {
     const t = await c.query('INSERT INTO teachers (user_id, staff_no, phone) VALUES ($1,$2,$3) RETURNING id, staff_no',
       [acct.userId, await nextStaffNo(c), b.phone]);
     await audit(req, 'teacher.create', { entityType: 'teacher', entityId: t.rows[0].id, details: { username: b.username }, client: c });
-    return { id: t.rows[0].id, staff_no: t.rows[0].staff_no, username: b.username, initial_password: acct.initialPassword };
+    return { id: t.rows[0].id, staff_no: t.rows[0].staff_no, username: b.username, login_code: acct.loginCode };
   });
   res.status(201).json(out);
 }));

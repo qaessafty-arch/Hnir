@@ -19,7 +19,19 @@ const FIRST_EN = ['Aryan', 'Sara', 'Raz', 'Alan', 'Hevi', 'Dana', 'Shilan', 'Kar
 const LAST_EN = ['Kamal', 'Ahmed', 'Rebwar', 'Saman', 'Omar', 'Hasan', 'Mohammed', 'Ali', 'Jamal', 'Farhad'];
 
 /** Demo-only additions that may be missing from older demo databases (safe to run repeatedly). */
+// Demo-only staff sign-in codes, easy to type for testing (real accounts get random codes).
+async function demoLoginCodes() {
+  const { sha256, normalizeLoginCode } = require('../src/lib/crypto');
+  const users = (await db.query(`SELECT id, username FROM users WHERE username LIKE 'demo.%' AND login_code_hash IS NULL AND deleted_at IS NULL`)).rows;
+  for (const u of users) {
+    const code = `${u.username.slice(5).toUpperCase()}-DEMO`;
+    await db.query('UPDATE users SET login_code_hash = $2, login_code_set_at = now() WHERE id = $1', [u.id, sha256(normalizeLoginCode(code))]);
+  }
+  if (users.length) console.log(`Demo sign-in codes set: ${users.map((u) => `${u.username.slice(5).toUpperCase()}-DEMO`).join(', ')}`);
+}
+
 async function topUpDemo() {
+  await demoLoginCodes();
   // Demo teacher comments on untouched demo grades (version 1, seeded or entered by a demo teacher; demo databases only). Deterministic, so re-runs change nothing.
   const c = await db.query(
     `UPDATE grade_records g SET comment = CASE

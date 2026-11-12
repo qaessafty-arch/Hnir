@@ -80,10 +80,10 @@ export default function ImportPage() {
       {result && (
         <div className="card" style={{ marginBlockStart: 16 }}>
           <div className="card-head"><h2>{t('importDone', { n: fmtNum(result.created.length) })}</h2>
-            <button type="button" className="btn btn-primary" onClick={() => saveBlob(csvBlob(['name', 'username', 'one_time_password'], result.created.map((c) => [c.full_name_ckb, c.username, c.initial_password])), 'student-logins.csv')}><Download size={16} />{t('downloadCredentials')}</button></div>
-          <div className="alert alert-warn" style={{ margin: 16 }}>{t('credentialsNote')}</div>
-          <div className="table-wrap"><table className="table"><thead><tr><th>{t('name')}</th><th>{t('username')}</th><th>{t('password')}</th></tr></thead>
-            <tbody>{result.created.map((c) => <tr key={c.id}><td>{c.full_name_ckb}</td><td><Code>{c.username}</Code></td><td><Code>{c.initial_password}</Code></td></tr>)}</tbody></table></div>
+            <button type="button" className="btn btn-primary" onClick={() => saveBlob(csvBlob(['name', 'student_id'], result.created.map((c) => [c.full_name_ckb, c.username])), 'student-logins.csv')}><Download size={16} />{t('downloadCredentials')}</button></div>
+          <div className="alert alert-info" style={{ margin: 16 }}>{t('credentialsNote')}</div>
+          <div className="table-wrap"><table className="table"><thead><tr><th>{t('name')}</th><th>{t('studentId')}</th></tr></thead>
+            <tbody>{result.created.map((c) => <tr key={c.id}><td>{c.full_name_ckb}</td><td><Code>{c.username}</Code></td></tr>)}</tbody></table></div>
         </div>
       )}
     </>

@@ -10,6 +10,7 @@ const { migrate } = require('../src/migrate');
 const { createApp } = require('../src/app');
 const { hashPassword } = require('../src/lib/passwords');
 const { invalidateSettings } = require('../src/lib/settings');
+const { sha256, normalizeLoginCode } = require('../src/lib/crypto');
 
 const PW = 'Correct-Horse-9';
 let app;
@@ -23,11 +24,20 @@ async function resetDb() {
   return app;
 }
 
+/** Test staff sign-in code for a username (staff sign in with a secret code only). */
+const codeFor = (username) => `${username}-TEST`;
+async function setCode(username) {
+  await db.query('UPDATE users SET login_code_hash = $2 WHERE username = $1', [username, sha256(normalizeLoginCode(codeFor(username)))]);
+}
+/** Fixture students sign in with their student ID: stu1 → DAR-9001. */
+const studentNo = (alias) => `DAR-90${String(alias.slice(3)).padStart(2, '0')}`;
+
 let hashCache;
 async function mkUser(username, roles, { mustChange = false } = {}) {
   hashCache ??= await hashPassword(PW);
   const u = await db.query(`INSERT INTO users (username, full_name, password_hash, must_change_password) VALUES ($1,$1,$2,$3) RETURNING id`, [username, hashCache, mustChange]);
   await db.query('INSERT INTO user_roles SELECT $1, id FROM roles WHERE key = ANY($2)', [u.rows[0].id, roles]);
+  if (!roles.every((r) => r === 'student')) await setCode(username);
   return u.rows[0].id;
 }
 
@@ -56,8 +66,8 @@ async function fixture() {
   await db.query('INSERT INTO teacher_assignments (teacher_id, section_id, subject_id, academic_year_id) VALUES ($1,$2,$3,$4)', [ids.teacherB, ids.secB, ids.math, ids.year]);
   ids.students = [];
   for (let i = 1; i <= 4; i++) {
-    const uid = await mkUser(`stu${i}`, ['student']);
-    const s = await db.query(`INSERT INTO students (user_id, student_no, full_name_ckb) VALUES ($1,$2,$3) RETURNING id`, [uid, `stu${i}`, `قوتابی ${i}`]);
+    const uid = await mkUser(studentNo(`stu${i}`), ['student']);
+    const s = await db.query(`INSERT INTO students (user_id, student_no, full_name_ckb) VALUES ($1,$2,$3) RETURNING id`, [uid, studentNo(`stu${i}`), `قوتابی ${i}`]);
     await db.query('INSERT INTO enrollments (student_id, section_id, academic_year_id) VALUES ($1,$2,$3)', [s.rows[0].id, i <= 2 ? ids.secA : ids.secB, ids.year]);
     ids.students.push(s.rows[0].id);
   }
@@ -65,14 +75,17 @@ async function fixture() {
 }
 
 /** A logged-in client that automatically sends the CSRF header. */
-async function login(username, password = PW) {
+async function login(username) {
+  return loginWithCode(/^stu\d+$/.test(username) ? studentNo(username) : codeFor(username));
+}
+async function loginWithCode(code) {
   const agent = request.agent(app);
-  const r = await agent.post('/api/auth/login').send({ username, password });
-  if (r.status !== 200) throw new Error(`login ${username} failed: ${r.status} ${JSON.stringify(r.body)}`);
+  const r = await agent.post('/api/auth/login').send({ code });
+  if (r.status !== 200) throw new Error(`login ${code} failed: ${r.status} ${JSON.stringify(r.body)}`);
   const me = await agent.get('/api/auth/me');
   const csrf = me.body.csrfToken;
   const wrap = (m) => (url) => agent[m](url).set('X-CSRF-Token', csrf || '');
   return { agent, csrf, me: me.body, get: (u) => agent.get(u), post: wrap('post'), put: wrap('put'), delete: wrap('delete'), patch: wrap('patch') };
 }
 
-module.exports = { resetDb, fixture, login, mkUser, PW, db, request: () => request(app), getApp: () => app };
+module.exports = { resetDb, fixture, login, loginWithCode, codeFor, setCode, studentNo, mkUser, PW, db, request: () => request(app), getApp: () => app };

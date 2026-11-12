@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, Camera, KeyRound, Archive, Pencil, FileText, Copy, Printer, CalendarDays } from 'lucide-react';
+import { Plus, Search, Camera, Archive, Pencil, FileText, Copy, Printer, CalendarDays } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, resizeImage } from '../lib/api';
@@ -84,7 +84,7 @@ export function StudentsPage() {
         )}
         {data && <Pagination page={f.page} pageSize={f.pageSize} total={data.total} onPage={(page) => setF({ ...f, page })} onPageSize={(pageSize) => setF({ ...f, pageSize, page: 1 })} />}
       </div>
-      {editing && <StudentForm student={editing} sections={currentSections} onClose={() => setEditing(null)} onSaved={(r) => { setEditing(null); reload(); if (r?.initial_password) setCreds(r); }} />}
+      {editing && <StudentForm student={editing} sections={currentSections} onClose={() => setEditing(null)} onSaved={(r) => { setEditing(null); reload(); if (r?.username && !editing.id) setCreds(r); }} />}
       {creds && <CredentialsModal creds={creds} onClose={() => setCreds(null)} />}
     </>
   );
@@ -94,15 +94,15 @@ export function CredentialsModal({ creds, onClose }) {
   const { t } = useI18n();
   const toast = useToast();
   const copy = async () => {
-    try { await navigator.clipboard.writeText(`${t('username')}: ${creds.username}\n${t('password')}: ${creds.initial_password}`); toast(t('copied')); } catch { /* clipboard blocked */ }
+    try { await navigator.clipboard.writeText(creds.login_code ? `${t('username')}: ${creds.username}\n${t('signInCode')}: ${creds.login_code}` : `${t('studentId')}: ${creds.username}`); toast(t('copied')); } catch { /* clipboard blocked */ }
   };
   return (
     <Modal size="narrow" title={t('credentialsTitle')} onClose={onClose}
       footer={<><button type="button" className="btn btn-secondary" onClick={() => window.print()}><Printer size={16} />{t('print')}</button><button type="button" className="btn btn-secondary" onClick={copy}><Copy size={16} />{t('copy')}</button><button type="button" className="btn btn-primary" onClick={onClose}>{t('close')}</button></>}>
-      <div className="alert alert-warn" style={{ marginBlockEnd: 14 }}>{t('credentialsNote')}</div>
+      <div className={`alert ${creds.login_code ? 'alert-warn' : 'alert-info'}`} style={{ marginBlockEnd: 14 }}>{creds.login_code ? t('staffCodeNote') : t('studentIdSignIn')}</div>
       <dl className="stack" style={{ gap: 8, margin: 0 }}>
-        <div><dt className="label">{t('username')}</dt><dd style={{ margin: 0, fontSize: '1.15rem' }}><Code>{creds.username}</Code></dd></div>
-        <div><dt className="label">{t('password')}</dt><dd style={{ margin: 0, fontSize: '1.15rem' }}><Code>{creds.initial_password}</Code></dd></div>
+        <div><dt className="label">{creds.login_code ? t('username') : t('studentId')}</dt><dd style={{ margin: 0, fontSize: '1.15rem' }}><Code>{creds.username}</Code></dd></div>
+        {creds.login_code && <div><dt className="label">{t('signInCode')}</dt><dd style={{ margin: 0, fontSize: '1.4rem', letterSpacing: '0.08em' }}><Code>{creds.login_code}</Code></dd></div>}
       </dl>
     </Modal>
   );
@@ -174,10 +174,6 @@ export function StudentDetailPage() {
       toast(t('photoUpdated')); setPhotoKey((k) => k + 1); reload();
     } catch (ex) { toast(errorText(ex), 'bad'); }
   };
-  const resetCreds = async () => {
-    if (!(await confirm({ message: t('resetCredentialsConfirm'), danger: true }))) return;
-    try { setCreds(await api(`/students/${id}/credentials`, { method: 'POST', body: {} })); } catch (ex) { toast(errorText(ex), 'bad'); }
-  };
   const move = async (sectionId) => {
     try { await api(`/students/${id}/enroll`, { method: 'POST', body: { section_id: Number(sectionId) } }); toast(t('saved')); reload(); } catch (ex) { toast(errorText(ex), 'bad'); }
   };
@@ -187,7 +183,6 @@ export function StudentDetailPage() {
         <Link className="btn btn-gold" to={`/students/${s.id}/weekly`}><CalendarDays size={16} />{t('weeklyGradeCard')}</Link>
         <Link className="btn btn-secondary" to={`/reports/student/${s.id}`}><FileText size={16} />{t('reportCard')}</Link>
         {can('students.write') && <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}><Pencil size={16} />{t('edit')}</button>}
-        {can('students.write') && <button type="button" className="btn btn-secondary" onClick={resetCreds}><KeyRound size={16} />{t('resetCredentials')}</button>}
         {can('students.archive') && <button type="button" className="btn btn-secondary" onClick={() => setStatusModal(true)}><Archive size={16} />{t('changeStatus')}</button>}
       </PageHead>
       <div className="grid grid-2">
