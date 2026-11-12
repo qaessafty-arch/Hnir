@@ -1,0 +1,9 @@
+node_modules/
+client/dist/
+.env
+server/.env
+server/data/
+backups/
+e2e-shots/
+legacy-credentials-*.csv
+*.log

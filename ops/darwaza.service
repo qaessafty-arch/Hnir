@@ -1,0 +1,23 @@
+# systemd unit (example). Copy to /etc/systemd/system/darwaza.service, then: systemctl enable --now darwaza
+[Unit]
+Description=Darwaza School Management System
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=darwaza
+Group=darwaza
+WorkingDirectory=/opt/darwaza/server
+EnvironmentFile=/etc/darwaza/darwaza.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/darwaza
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

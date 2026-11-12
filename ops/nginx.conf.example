@@ -1,0 +1,22 @@
+# Reverse proxy with TLS in front of the Node app (example — adapt domain and certificate paths).
+server {
+    listen 80;
+    server_name grades.example.school;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl http2;
+    server_name grades.example.school;
+    ssl_certificate     /etc/letsencrypt/live/grades.example.school/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/grades.example.school/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 3m;          # photo uploads are limited to 2 MB by the app
+    gzip on; gzip_types text/css application/javascript application/json text/csv;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 60s;
+    }
+}

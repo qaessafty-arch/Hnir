@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قوتابخانەی دەروازەی ناحکومی | Darwaza Private School</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darwaza: {
+                            navy: '#182B53',
+                            darkNavy: '#0F1B36',
+                            gold: '#E59B24',
+                            lightGold: '#F7C873',
+                            bgSlate: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', 'Plus Jakarta Sans', sans-serif; }
+        .ltr-mode { font-family: 'Plus Jakarta Sans', 'Vazirmatn', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #E59B24 0%, #D9880F 100%); }
+        .navy-gradient { background: linear-gradient(135deg, #182B53 0%, #0F1B36 100%); }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+            .print-shadow-none { shadow: none !important; border: 1px solid #ccc !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-darwaza-gold selection:text-white">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="bg-darwaza-navy text-white shadow-xl border-b-2 border-darwaza-gold sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- School Brand & Logo -->
+            <div class="flex items-center space-x-4 space-x-reverse cursor-pointer" onclick="goHome()">
+                <!-- Vector Recreation of Darwaza Logo -->
+                <div class="w-12 h-14 relative flex-shrink-0">
+                    <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-md">
+                        <text x="100" y="24" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="900" fill="#E59B24" text-anchor="middle" letter-spacing="3">DARWAZA</text>
+                        <circle cx="42" cy="18" r="4" fill="#E59B24"/>
+                        <circle cx="158" cy="18" r="4" fill="#E59B24"/>
+                        <path d="M 30,40 L 100,40 L 170,40 L 170,140 C 170,185 100,215 100,215 C 100,215 30,185 30,140 Z" fill="#182B53" stroke="#E59B24" stroke-width="6"/>
+                        <g stroke="#E59B24" stroke-width="4">
+                            <line x1="100" y1="100" x2="40" y2="60" />
+                            <line x1="100" y1="100" x2="60" y2="50" />
+                            <line x1="100" y1="100" x2="140" y2="60" />
+                            <line x1="100" y1="100" x2="160" y2="50" />
+                            <line x1="100" y1="100" x2="40" y2="120" />
+                            <line x1="100" y1="100" x2="160" y2="120" />
+                            <line x1="100" y1="100" x2="70" y2="170" />
+                            <line x1="100" y1="100" x2="130" y2="170" />
+                            <line x1="100" y1="100" x2="100" y2="180" />
+                        </g>
+                        <path d="M 45,52 L 100,52 L 155,52 L 155,135 C 155,170 100,195 100,195 C 100,195 45,170 45,135 Z" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+                        <text x="100" y="76" font-family="Plus Jakarta Sans, sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" text-anchor="middle">2019</text>
+                        <path d="M 100,95 L 115,120 L 108,135 L 92,135 L 85,120 Z" fill="#182B53" stroke="#FFFFFF" stroke-width="3"/>
+                        <circle cx="100" cy="115" r="3" fill="#E59B24"/>
+                        <rect x="25" y="130" width="150" height="28" rx="4" fill="#FFFFFF" stroke="#182B53" stroke-width="3"/>
+                        <text x="100" y="149" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="800" fill="#182B53" text-anchor="middle">Darwaza Private School</text>
+                    </svg>
+                </div>
+
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl text-white tracking-tight leading-none" id="app-title">قوتابخانەی دەروازەی ناحکومی</h1>
+                    <p class="text-xs text-darwaza-lightGold font-medium mt-1 tracking-wide" id="app-subtitle">Darwaza Private School • Grade Management System</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div id="user-badge" class="hidden sm:flex items-center bg-darwaza-darkNavy/80 px-3.5 py-1.5 rounded-xl border border-darwaza-gold/30 text-xs text-slate-100">
+                    <i class="fa-solid fa-user-shield text-darwaza-gold ml-2 mr-2"></i>
+                    <span id="user-badge-text">...</span>
+                </div>
+
+                <button onclick="toggleLanguage()" class="bg-darwaza-darkNavy hover:bg-slate-800 text-darwaza-gold font-bold px-3 py-2 rounded-xl border border-darwaza-gold/40 transition text-xs sm:text-sm flex items-center">
+                    <i class="fa-solid fa-globe ml-1.5 mr-1.5"></i>
+                    <span id="lang-btn-text">English</span>
+                </button>
+
+                <button id="logout-btn" onclick="logout()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl font-bold transition text-xs sm:text-sm items-center shadow-md">
+                    <i class="fa-solid fa-right-from-bracket ml-1.5 mr-1.5"></i>
+                    <span id="logout-text">دەرچوون</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+
+        <!-- LOGIN SECTION -->
+        <section id="login-section" class="max-w-md mx-auto my-6 sm:my-10">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div class="navy-gradient p-6 text-center text-white relative">
+                    <div class="w-20 h-24 mx-auto mb-2">
+                        <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-lg">
+                            <text x="100" y="24" font-family="Plus Jakarta Sans" font-size="20" font-weight="900" fill="#E59B24" text-anchor="middle" letter-spacing="3">DARWAZA</text>
+                            <path d="M 30,40 L 100,40 L 170,40 L 170,140 C 170,185 100,215 100,215 C 100,215 30,185 30,140 Z" fill="#182B53" stroke="#E59B24" stroke-width="6"/>
+                            <g stroke="#E59B24" stroke-width="4">
+                                <line x1="100" y1="100" x2="40" y2="60" /><line x1="100" y1="100" x2="60" y2="50" /><line x1="100" y1="100" x2="140" y2="60" /><line x1="100" y1="100" x2="160" y2="50" /><line x1="100" y1="100" x2="40" y2="120" /><line x1="100" y1="100" x2="160" y2="120" /><line x1="100" y1="100" x2="70" y2="170" /><line x1="100" y1="100" x2="130" y2="170" /><line x1="100" y1="100" x2="100" y2="180" />
+                            </g>
+                            <path d="M 45,52 L 100,52 L 155,52 L 155,135 C 155,170 100,195 100,195 C 100,195 45,170 45,135 Z" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+                            <text x="100" y="76" font-family="Plus Jakarta Sans" font-size="22" font-weight="900" fill="#FFFFFF" text-anchor="middle">2019</text>
+                            <path d="M 100,95 L 115,120 L 108,135 L 92,135 L 85,120 Z" fill="#182B53" stroke="#FFFFFF" stroke-width="3"/>
+                            <circle cx="100" cy="115" r="3" fill="#E59B24"/>
+                            <rect x="25" y="130" width="150" height="28" rx="4" fill="#FFFFFF" stroke="#182B53" stroke-width="3"/>
+                            <text x="100" y="149" font-family="Plus Jakarta Sans" font-size="11" font-weight="800" fill="#182B53" text-anchor="middle">Darwaza Private School</text>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-extrabold text-white" id="portal-welcome-title">سیستەمی چوونەژوورەوەی قوتابخانە</h2>
+                    <p class="text-xs text-darwaza-lightGold mt-1" id="portal-welcome-sub">تکایە بەشی چوونەژوورەوەت هەڵبژێرە</p>
+                </div>
+
+                <div class="grid grid-cols-2 bg-slate-100 p-1.5 border-b border-slate-200 text-center font-bold text-xs sm:text-sm" id="role-tabs">
+                    <button onclick="switchRoleTab('student')" id="tab-student" class="py-3 rounded-2xl transition duration-200 bg-white shadow-md text-darwaza-navy border border-slate-200">
+                        <i class="fa-solid fa-user-graduate block sm:inline text-base mb-1 sm:mb-0"></i>
+                        <span id="tab-label-student">قوتابی</span>
+                    </button>
+                    <button onclick="switchRoleTab('admin')" id="tab-admin" class="py-3 rounded-2xl transition duration-200 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-user-shield block sm:inline text-base mb-1 sm:mb-0"></i>
+                        <span id="tab-label-admin">بەڕێوەبەر</span>
+                    </button>
+                </div>
+
+                <div class="p-6 sm:p-8">
+                    <!-- STUDENT LOGIN FORM -->
+                    <form id="student-login-form" onsubmit="handleStudentLogin(event)" class="space-y-5">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-bold text-slate-800" id="st-login-title">چوونەژوورەوەی قوتابیان</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="st-login-desc">کۆدی نهێنی تایبەت بە خۆت بنووسە بۆ بینینی نمرەکانت</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5" id="lbl-student-code">کۆدی نهێنی قوتابی (Secret Code)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                                <input type="password" id="student-code-input" placeholder="••••••••" required
+                                       class="w-full pr-10 pl-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-darwaza-gold focus:border-darwaza-navy text-sm font-semibold tracking-widest">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full gold-gradient hover:opacity-95 text-darwaza-navy font-extrabold py-3.5 rounded-xl shadow-lg transition duration-200 flex items-center justify-center text-sm">
+                            <span id="btn-login-student">چوونەژوورەوە</span>
+                            <i class="fa-solid fa-arrow-left mr-2 ml-2"></i>
+                        </button>
+                    </form>
+
+                    <!-- ADMIN LOGIN FORM -->
+                    <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-4 hidden">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-bold text-slate-800" id="ad-login-title">چوونەژوورەوەی بەڕێوەبەری قوتابخانە</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="ad-login-desc">پاسکۆدی تایبەتی بەڕێوەبەرایەتی</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5" id="lbl-admin-pass">پاسکۆد (Passcode)</label>
+                            <input type="password" id="admin-pass-input" placeholder="••••••••" required
+                                   class="w-full px-3.5 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-darwaza-gold text-sm font-bold">
+                        </div>
+                        <button type="submit" class="w-full bg-darwaza-navy hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg transition duration-200 flex items-center justify-center text-sm">
+                            <span id="btn-login-admin">چوونەژوورەوەی بەڕێوەبەری گشتی</span>
+                            <i class="fa-solid fa-user-shield mr-2 ml-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section id="admin-dashboard" class="hidden space-y-6">
+            <!-- Top Controls Nav -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-extrabold text-darwaza-navy" id="ad-dash-title">کۆنتڕۆڵی گشتی بەڕێوەبەرایەتی دەروازە</h2>
+                    <p class="text-xs text-slate-500 mt-0.5" id="ad-dash-subtitle">تۆمارکردن، دەستکاری نمرەکان و بەڕێوەبردنی قوتابیان</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setAdminTab('students')" id="ad-tab-students" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-darwaza-navy text-white shadow">
+                        <i class="fa-solid fa-users ml-1.5"></i> <span id="ad-tab-st-label">قوتابیان</span>
+                    </button>
+                    <button onclick="setAdminTab('grades-entry')" id="ad-tab-grades-entry" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        <i class="fa-solid fa-file-pen ml-1.5"></i> <span id="ad-tab-entry-label">تۆمارکردنی نمرەکان (سەرجەم وانەکان)</span>
+                    </button>
+                    <button onclick="setAdminTab('grades')" id="ad-tab-grades" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        <i class="fa-solid fa-table-list ml-1.5"></i> <span id="ad-tab-gr-label">تەواوی نمرەکان</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 1: STUDENTS -->
+            <div id="admin-content-students" class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center" id="ad-add-st-title">
+                        <i class="fa-solid fa-user-plus text-darwaza-gold ml-2"></i> دروستکردنی قوتابیی نوێ
+                    </h3>
+                    <form onsubmit="handleAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
+                        <div class="sm:col-span-1">
+                            <label class="block text-xs font-bold text-slate-600 mb-1" id="lbl-st-photo">وێنەی قوتابی (ئارەزوومەندانە)</label>
+                            <input type="file" id="new-st-photo" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-darwaza-navy file:text-white hover:file:bg-slate-800 cursor-pointer">
+                        </div>
+                        <div class="sm:col-span-1">
+                            <label class="block text-xs font-bold text-slate-600 mb-1" id="lbl-st-name">ناوی تەواوی قوتابی</label>
+                            <input type="text" id="new-st-name" placeholder="نموونە: ئاریان سامان" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-darwaza-gold">
+                        </div>
+                        <div class="sm:col-span-1">
+                            <label class="block text-xs font-bold text-slate-600 mb-1" id="lbl-st-grade">پۆل</label>
+                            <select id="new-st-class" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-darwaza-gold bg-white font-semibold">
+                                <option value="1">پۆلی 1 (Grade 1)</option>
+                                <option value="2">پۆلی 2 (Grade 2)</option>
+                                <option value="3">پۆلی 3 (Grade 3)</option>
+                                <option value="4">پۆلی 4 (Grade 4)</option>
+                                <option value="5">پۆلی 5 (Grade 5)</option>
+                                <option value="6">پۆلی 6 (Grade 6)</option>
+                                <option value="7">پۆلی 7 (Grade 7)</option>
+                                <option value="8">پۆلی 8 (Grade 8)</option>
+                                <option value="9">پۆلی 9 (Grade 9)</option>
+                                <option value="10" selected>پۆلی 10 (Grade 10)</option>
+                                <option value="11">پۆلی 11 (Grade 11)</option>
+                                <option value="12">پۆلی 12 (Grade 12)</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-1">
+                            <label class="block text-xs font-bold text-slate-600 mb-1" id="lbl-st-code">کۆدی نهێنی (تەنها بۆ بەڕێوەبەر)</label>
+                            <input type="text" id="new-st-code" required readonly class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono font-bold bg-slate-100 text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div class="sm:col-span-1">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition text-sm flex items-center justify-center">
+                                <i class="fa-solid fa-plus ml-1.5"></i>
+                                <span id="btn-add-st">زیادکردنی قوتابی</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                        <h4 class="font-bold text-slate-800 text-sm" id="ad-st-list-title">لیستی قوتابیانی تۆمارکراو</h4>
+                        <span id="st-count-badge" class="bg-darwaza-navy text-white text-xs font-bold px-3 py-1 rounded-full">0 قوتابی</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">وێنە</th>
+                                    <th class="p-3.5">ناوی قوتابی</th>
+                                    <th class="p-3.5">پۆل</th>
+                                    <th class="p-3.5">کۆدی نهێنی (Protected Code)</th>
+                                    <th class="p-3.5 text-center">کردارەکان</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-students-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 2: ALL SUBJECTS PER STUDENT (MASTER CARD ENTRY) -->
+            <div id="admin-content-grades-entry" class="space-y-6 hidden">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="font-extrabold text-slate-800 text-lg flex items-center" id="ad-entry-title">
+                                <i class="fa-solid fa-table-cells text-darwaza-gold ml-2"></i> کارتی گشتی نمرەکانی قوتابی (سەرجەم وانەکان لە یەک پەنجەرەدا)
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1" id="ad-entry-desc">قوتابی و هەفتە هەڵبژێرە، پاشان سەرجەم نمرەی وانەکان پڕبکەرەوە و یەک کلیک لە پاشەکەوتکردن بدە</p>
+                        </div>
+                        
+                        <!-- Global Selectors for Week & Student -->
+                        <div class="flex flex-wrap gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1" id="lbl-ad-select-student">دیاریکردنی قوتابی</label>
+                                <select id="master-student-select" onchange="renderMasterStudentForm()" class="px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold text-darwaza-navy bg-white focus:ring-2 focus:ring-darwaza-gold">
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1" id="lbl-ad-select-week">دیاریکردنی هەفتە</label>
+                                <select id="master-week-select" onchange="renderMasterStudentForm()" class="px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold text-darwaza-navy bg-white focus:ring-2 focus:ring-darwaza-gold">
+                                    <option value="Week 1">هەفتەی ١ (Week 1)</option>
+                                    <option value="Week 2">هەفتەی ٢ (Week 2)</option>
+                                    <option value="Week 3">هەفتەی ٣ (Week 3)</option>
+                                    <option value="Week 4">هەفتەی ٤ (Week 4)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Master Table containing ALL Subjects for the selected student -->
+                    <form onsubmit="saveMasterStudentGrades(event)" class="space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3.5">وانە / بابەت (Subject)</th>
+                                        <th class="p-3.5 text-center">سیستەمی نمرە (Max)</th>
+                                        <th class="p-3.5 text-center">نمرەی بەدەستهاتوو</th>
+                                        <th class="p-3.5">تێبینی مامۆستا / بەڕێوەبەر</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="master-subjects-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" class="gold-gradient hover:opacity-95 text-darwaza-navy font-extrabold px-6 py-3 rounded-xl shadow-lg transition flex items-center text-sm">
+                                <i class="fa-solid fa-floppy-disk ml-2"></i>
+                                <span id="btn-save-master">پاشەکەوتکردنی هەموو نمرەکانی ئەم قوتابییە</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 3: ALL GRADES VIEW -->
+            <div id="admin-content-grades" class="space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 text-base" id="ad-gr-overview-title">خشتەی گشتی نمرەکانی دەروازە</h3>
+                        <p class="text-xs text-slate-500" id="ad-gr-overview-desc">دیمەنی سەرجەم نمرە هەفتانییە تۆمارکراوەکان</p>
+                    </div>
+                    <button onclick="window.print()" class="bg-darwaza-navy hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center">
+                        <i class="fa-solid fa-print ml-2"></i>
+                        <span id="btn-print-admin">چاپکردنی ڕاپۆرت</span>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">ناوی قوتابی</th>
+                                    <th class="p-3.5">پۆل</th>
+                                    <th class="p-3.5">وانە</th>
+                                    <th class="p-3.5">هەفتە</th>
+                                    <th class="p-3.5">نمرە</th>
+                                    <th class="p-3.5">نمرەی بەرزترین (Max)</th>
+                                    <th class="p-3.5 text-center">سڕینەوە</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-grades-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STUDENT DASHBOARD & REPORT CARD -->
+        <section id="student-dashboard" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div id="st-avatar-container" class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-darwaza-gold shadow-md flex-shrink-0 bg-slate-100 flex items-center justify-center text-darwaza-navy">
+                        <i class="fa-solid fa-user-graduate text-3xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black text-darwaza-navy" id="st-profile-name">...</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1" id="st-profile-class-text">پۆل • کارتی نمرەی دەستنیشانکراوی هەفتانە</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 no-print">
+                    <button onclick="window.print()" class="gold-gradient hover:opacity-95 text-darwaza-navy font-black text-xs px-5 py-3 rounded-xl shadow-md transition flex items-center">
+                        <i class="fa-solid fa-print ml-2"></i>
+                        <span id="btn-print-card">چاپکردنی کارتی نمرە</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white border-r-4 border-r-emerald-500 p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <span class="text-xs font-bold text-slate-500 block mb-1" id="lbl-st-avg">کۆی تێکڕای نمرەکان</span>
+                    <div class="text-3xl font-black text-emerald-600" id="st-overall-avg">0%</div>
+                </div>
+                <div class="bg-white border-r-4 border-r-darwaza-navy p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <span class="text-xs font-bold text-slate-500 block mb-1" id="lbl-st-count">وانە بەشداربووەکان</span>
+                    <div class="text-3xl font-black text-darwaza-navy" id="st-subjects-count">0</div>
+                </div>
+                <div class="bg-white border-r-4 border-r-darwaza-gold p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <span class="text-xs font-bold text-slate-500 block mb-1" id="lbl-st-status">ئاستی گشتی</span>
+                    <div class="text-lg font-black text-amber-700" id="st-performance-status">-</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden print-shadow-none">
+                <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-extrabold text-darwaza-navy text-base" id="st-report-title">کارتی نمرەی هەفتانەی قوتابی</h3>
+                    <span class="text-xs font-bold text-slate-400" id="st-report-school">Darwaza Private School</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">بابەت / وانە</th>
+                                <th class="p-3.5">هەفتە</th>
+                                <th class="p-3.5">نمرەی بەدەستهاتوو</th>
+                                <th class="p-3.5">بەرزترین نمرە (Max)</th>
+                                <th class="p-3.5">ڕێژە (Percentage)</th>
+                                <th class="p-3.5">تێبینی</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-grades-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
+        <p id="footer-text">قوتابخانەی دەروازەی ناحکومی © 2026 - هەموو مافەکانی پارێزراوە | Darwaza Private School</p>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // List of all subjects
+        const allSubjectsList = [
+            { name: "ڕەفتار / Behavior", defaultMax: 10 },
+            { name: "ئینگلیزی / English", defaultMax: 10 },
+            { name: "بیرکاری / Math", defaultMax: 10 },
+            { name: "زانست / Science", defaultMax: 10 },
+            { name: "کوردی / Kurdish", defaultMax: 10 },
+            { name: "ئاین / Religion", defaultMax: 10 },
+            { name: "عەرەبی / Arabic", defaultMax: 10 },
+            { name: "کۆمەڵایەتی / Social", defaultMax: 10 },
+            { name: "بەهاکان / Soc. Value", defaultMax: 10 },
+            { name: "ئایتی / IT", defaultMax: 10 },
+            { name: "هونەر / Art", defaultMax: 10 },
+            { name: "وەرزش / Sport", defaultMax: 10 },
+            { name: "مۆزیک / Music", defaultMax: 10 }
+        ];
+
+        function isFailingGrade(score, maxScore) {
+            if (maxScore === 10 && score < 5) return true;
+            if (maxScore === 20 && score < 10) return true;
+            return false;
+        }
+
+        let currentLang = 'ckb';
+
+        const i18n = {
+            ckb: {
+                appTitle: "قوتابخانەی دەروازەی ناحکومی",
+                appSubtitle: "Darwaza Private School • Grade Management System",
+                langBtn: "English",
+                logout: "دەرچوون",
+                tabStudent: "قوتابی",
+                tabAdmin: "بەڕێوەبەر",
+                portalWelcomeTitle: "سیستەمی بەڕێوەبردنی نمرەی دەروازە",
+                portalWelcomeSub: "تکایە بەشی چوونەژوورەوەت هەڵبژێرە",
+                stLoginTitle: "چوونەژوورەوەی قوتابیان",
+                stLoginDesc: "کۆدی نهێنی تایبەت بە خۆت بنووسە بۆ بینینی نمرەکانت",
+                lblStudentCode: "کۆدی نهێنی قوتابی (Secret Code)",
+                btnLoginStudent: "چوونەژوورەوە",
+                adLoginTitle: "چوونەژوورەوەی بەڕێوەبەری قوتابخانە",
+                adLoginDesc: "پاسکۆدی تایبەتی بەڕێوەبەرایەتی",
+                lblAdminPass: "پاسکۆد (Passcode)",
+                btnLoginAdmin: "چوونەژوورەوەی بەڕێوەبەری گشتی",
+                adDashTitle: "کۆنتڕۆڵی گشتی بەڕێوەبەرایەتی دەروازە",
+                adDashSubtitle: "تۆمارکردن، دەستکاری نمرەکان و بەڕێوەبردنی قوتابیان",
+                adTabStLabel: "قوتابیان",
+                adTabEntryLabel: "تۆمارکردنی نمرەکان (سەرجەم وانەکان)",
+                adTabGrLabel: "تەواوی نمرەکان",
+                adAddStTitle: "دروستکردنی قوتابیی نوێ",
+                lblStPhoto: "وێنەی قوتابی (ئارەزوومەندانە)",
+                lblStName: "ناوی تەواوی قوتابی",
+                lblStGrade: "پۆل",
+                lblStCode: "کۆدی نهێنی (تەنها بۆ بەڕێوەبەر)",
+                btnAddSt: "زیادکردنی قوتابی",
+                adStListTitle: "لیستی قوتابیانی تۆمارکراو",
+                adEntryTitle: "کارتی گشتی نمرەکانی قوتابی (سەرجەم وانەکان لە یەک پەنجەرەدا)",
+                adEntryDesc: "قوتابی و هەفتە هەڵبژێرە، پاشان سەرجەم نمرەی وانەکان پڕبکەرەوە و یەک کلیک لە پاشەکەوتکردن بدە",
+                lblAdSelectStudent: "دیاریکردنی قوتابی",
+                lblAdSelectWeek: "دیاریکردنی هەفتە",
+                btnSaveMaster: "پاشەکەوتکردنی هەموو نمرەکانی ئەم قوتابییە",
+                adGrOverviewTitle: "خشتەی گشتی نمرەکانی دەروازە",
+                adGrOverviewDesc: "دیمەنی سەرجەم نمرە هەفتانییە تۆمارکراوەکان",
+                btnPrintAdmin: "چاپکردنی ڕاپۆرت",
+                btnPrintCard: "چاپکردنی کارتی نمرە",
+                lblStAvg: "کۆی تێکڕای نمرەکان",
+                lblStCount: "وانە بەشداربووەکان",
+                lblStStatus: "ئاستی گشتی",
+                stReportTitle: "کارتی نمرەی هەفتانەی قوتابی",
+                footerText: "قوتابخانەی دەروازەی ناحکومی © 2026 - هەموو مافەکانی پارێزراوە | Darwaza Private School"
+            },
+            en: {
+                appTitle: "Darwaza Private School",
+                appSubtitle: "Grade Management & Reporting System",
+                langBtn: "کوردی",
+                logout: "Logout",
+                tabStudent: "Student",
+                tabAdmin: "Admin",
+                portalWelcomeTitle: "Darwaza Grade Management System",
+                portalWelcomeSub: "Please select your login role",
+                stLoginTitle: "Student Access Portal",
+                stLoginDesc: "Enter your private student passcode to view report card",
+                lblStudentCode: "Secret Student Passcode",
+                btnLoginStudent: "Access Student Dashboard",
+                adLoginTitle: "School Administrator Access",
+                adLoginDesc: "Enter administration access key",
+                lblAdminPass: "Admin Passcode",
+                btnLoginAdmin: "Sign in as Principal",
+                adDashTitle: "Darwaza School Management Console",
+                adDashSubtitle: "Manage students and record/edit all grades",
+                adTabStLabel: "Students",
+                adTabEntryLabel: "Master Grade Entry",
+                adTabGrLabel: "All Grade Records",
+                adAddStTitle: "Register New Student",
+                lblStPhoto: "Student Photo (Optional)",
+                lblStName: "Full Student Name",
+                lblStGrade: "Class / Grade",
+                lblStCode: "Generated Secret Code (Admin Only)",
+                btnAddSt: "Add Student",
+                adStListTitle: "Registered Students Directory",
+                adEntryTitle: "Student Master Grade Report Card Entry",
+                adEntryDesc: "Select student and week, then enter all subject grades in one view",
+                lblAdSelectStudent: "Select Student",
+                lblAdSelectWeek: "Select Week",
+                btnSaveMaster: "Save All Grades for this Student",
+                adGrOverviewTitle: "Master Grade Records Matrix",
+                adGrOverviewDesc: "Overview of all recorded weekly scores",
+                btnPrintAdmin: "Print / Export PDF",
+                btnPrintCard: "Print Report Card",
+                lblStAvg: "Overall Average",
+                lblStCount: "Graded Subjects",
+                lblStStatus: "Performance Level",
+                stReportTitle: "Student Weekly Progress Card",
+                footerText: "Darwaza Private School © 2026 - All Rights Reserved"
+            }
+        };
+
+        const initialStudents = [
+            { id: 1, code: "DAR-991", name: "ئالان کەمال (Alan Kamal)", gradeClass: "10", photo: "" },
+            { id: 2, code: "DAR-992", name: "سارا ئەحمەد (Sara Ahmed)", gradeClass: "11", photo: "" },
+            { id: 3, code: "DAR-993", name: "ڕاز ڕێبوار (Raz Rebwar)", gradeClass: "10", photo: "" }
+        ];
+
+        const initialGrades = [
+            { id: 1, studentCode: "DAR-991", subject: "بیرکاری / Math", week: "Week 1", score: 9, maxScore: 10, note: "نایاب بوو" },
+            { id: 2, studentCode: "DAR-991", subject: "زانست / Science", week: "Week 1", score: 8, maxScore: 20, note: "پێویستی بە تێکۆشانە" },
+            { id: 3, studentCode: "DAR-992", subject: "ئینگلیزی / English", week: "Week 1", score: 10, maxScore: 10, note: "زۆر باشە" }
+        ];
+
+        let db = {
+            students: JSON.parse(localStorage.getItem('darwaza_students')) || initialStudents,
+            grades: JSON.parse(localStorage.getItem('darwaza_grades')) || initialGrades
+        };
+
+        function saveState() {
+            localStorage.setItem('darwaza_students', JSON.stringify(db.students));
+            localStorage.setItem('darwaza_grades', JSON.stringify(db.grades));
+        }
+
+        let currentUser = null;
+        let visibleCodes = {};
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ckb' ? 'en' : 'ckb';
+            const htmlTag = document.documentElement;
+            
+            if (currentLang === 'ckb') {
+                htmlTag.setAttribute('dir', 'rtl');
+                htmlTag.setAttribute('lang', 'ckb');
+                document.body.classList.remove('ltr-mode');
+            } else {
+                htmlTag.setAttribute('dir', 'ltr');
+                htmlTag.setAttribute('lang', 'en');
+                document.body.classList.add('ltr-mode');
+            }
+            updateLanguageUI();
+        }
+
+        function updateLanguageUI() {
+            const t = i18n[currentLang];
+            
+            document.getElementById('app-title').textContent = t.appTitle;
+            document.getElementById('app-subtitle').textContent = t.appSubtitle;
+            document.getElementById('lang-btn-text').textContent = t.langBtn;
+            document.getElementById('logout-text').textContent = t.logout;
+            
+            document.getElementById('tab-label-student').textContent = t.tabStudent;
+            document.getElementById('tab-label-admin').textContent = t.tabAdmin;
+
+            document.getElementById('portal-welcome-title').textContent = t.portalWelcomeTitle;
+            document.getElementById('portal-welcome-sub').textContent = t.portalWelcomeSub;
+
+            document.getElementById('st-login-title').textContent = t.stLoginTitle;
+            document.getElementById('st-login-desc').textContent = t.stLoginDesc;
+            document.getElementById('lbl-student-code').textContent = t.lblStudentCode;
+            document.getElementById('btn-login-student').textContent = t.btnLoginStudent;
+
+            document.getElementById('ad-login-title').textContent = t.adLoginTitle;
+            document.getElementById('ad-login-desc').textContent = t.adLoginDesc;
+            document.getElementById('lbl-admin-pass').textContent = t.lblAdminPass;
+            document.getElementById('btn-login-admin').textContent = t.btnLoginAdmin;
+
+            document.getElementById('ad-dash-title').textContent = t.adDashTitle;
+            document.getElementById('ad-dash-subtitle').textContent = t.adDashSubtitle;
+            document.getElementById('ad-tab-st-label').textContent = t.adTabStLabel;
+            document.getElementById('ad-tab-entry-label').textContent = t.adTabEntryLabel;
+            document.getElementById('ad-tab-gr-label').textContent = t.adTabGrLabel;
+            document.getElementById('ad-add-st-title').innerHTML = `<i class="fa-solid fa-user-plus text-darwaza-gold ml-2 mr-2"></i> ${t.adAddStTitle}`;
+            document.getElementById('lbl-st-photo').textContent = t.lblStPhoto;
+            document.getElementById('lbl-st-name').textContent = t.lblStName;
+            document.getElementById('lbl-st-grade').textContent = t.lblStGrade;
+            document.getElementById('lbl-st-code').textContent = t.lblStCode;
+            document.getElementById('btn-add-st').textContent = t.btnAddSt;
+            document.getElementById('ad-st-list-title').textContent = t.adStListTitle;
+
+            document.getElementById('ad-entry-title').innerHTML = `<i class="fa-solid fa-table-cells text-darwaza-gold ml-2 mr-2"></i> ${t.adEntryTitle}`;
+            document.getElementById('ad-entry-desc').textContent = t.adEntryDesc;
+            document.getElementById('lbl-ad-select-student').textContent = t.lblAdSelectStudent;
+            document.getElementById('lbl-ad-select-week').textContent = t.lblAdSelectWeek;
+            document.getElementById('btn-save-master').textContent = t.btnSaveMaster;
+
+            document.getElementById('ad-gr-overview-title').textContent = t.adGrOverviewTitle;
+            document.getElementById('ad-gr-overview-desc').textContent = t.adGrOverviewDesc;
+            document.getElementById('btn-print-admin').innerHTML = `<i class="fa-solid fa-print ml-2 mr-2"></i> ${t.btnPrintAdmin}`;
+
+            document.getElementById('btn-print-card').innerHTML = `<i class="fa-solid fa-print ml-2 mr-2"></i> ${t.btnPrintCard}`;
+            document.getElementById('lbl-st-avg').textContent = t.lblStAvg;
+            document.getElementById('lbl-st-count').textContent = t.lblStCount;
+            document.getElementById('lbl-st-status').textContent = t.lblStStatus;
+            document.getElementById('st-report-title').textContent = t.stReportTitle;
+            document.getElementById('footer-text').textContent = t.footerText;
+
+            if (currentUser) {
+                if (currentUser.role === 'admin') {
+                    populateMasterStudentSelect();
+                    renderAdminTables();
+                }
+                if (currentUser.role === 'student') renderStudentDashboard();
+            }
+        }
+
+        function goHome() {
+            if (!currentUser) showView('login-section');
+        }
+
+        function switchRoleTab(role) {
+            ['student', 'admin'].forEach(r => {
+                const btn = document.getElementById(`tab-${r}`);
+                const form = document.getElementById(`${r}-login-form`);
+                if (r === role) {
+                    btn.className = "py-3 rounded-2xl transition duration-200 bg-white shadow-md text-darwaza-navy font-extrabold border border-slate-200";
+                    form.classList.remove('hidden');
+                } else {
+                    btn.className = "py-3 rounded-2xl transition duration-200 text-slate-600 hover:text-slate-900";
+                    form.classList.add('hidden');
+                }
+            });
+        }
+
+        function handleStudentLogin(e) {
+            e.preventDefault();
+            const codeInput = document.getElementById('student-code-input').value.trim().toUpperCase();
+            const student = db.students.find(s => s.code.toUpperCase() === codeInput);
+
+            if (student) {
+                currentUser = { role: 'student', data: student };
+                showView('student-dashboard');
+                renderStudentDashboard();
+            } else {
+                alert(currentLang === 'ckb' ? 'کۆدی نهێنی هەڵەیە! تکایە لە بەڕێوەبەرایەتی قوتابخانە وەریبگرەوە.' : 'Invalid Secret Code!');
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === 'admin' || pass === 'admin123') {
+                currentUser = { role: 'admin', data: { name: 'بەڕێوەبەری قوتابخانە' } };
+                showView('admin-dashboard');
+                generateAutoStudentCode();
+                populateMasterStudentSelect();
+                renderAdminTables();
+            } else {
+                alert(currentLang === 'ckb' ? 'پاسکۆدی بەڕێوەبەر هەڵەیە!' : 'Incorrect Admin Passcode!');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            showView('login-section');
+            document.getElementById('admin-pass-input').value = '';
+            document.getElementById('student-code-input').value = '';
+        }
+
+        function showView(viewId) {
+            ['login-section', 'admin-dashboard', 'student-dashboard'].forEach(v => {
+                document.getElementById(v).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+
+            const logoutBtn = document.getElementById('logout-btn');
+            const userBadge = document.getElementById('user-badge');
+            const userBadgeText = document.getElementById('user-badge-text');
+
+            if (viewId !== 'login-section') {
+                logoutBtn.classList.remove('hidden');
+                logoutBtn.classList.add('flex');
+                userBadge.classList.remove('hidden');
+                userBadge.classList.add('flex');
+
+                if (currentUser.role === 'admin') userBadgeText.textContent = "بەڕێوەبەری قوتابخانە / Principal";
+                if (currentUser.role === 'student') userBadgeText.textContent = `${currentUser.data.name}`;
+            } else {
+                logoutBtn.classList.add('hidden');
+                logoutBtn.classList.remove('flex');
+                userBadge.classList.add('hidden');
+                userBadge.classList.remove('flex');
+            }
+        }
+
+        function setAdminTab(tab) {
+            ['students', 'grades-entry', 'grades'].forEach(t => {
+                const btn = document.getElementById(`ad-tab-${t}`);
+                const content = document.getElementById(`admin-content-${t}`);
+                if (t === tab) {
+                    btn.className = "px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-darwaza-navy text-white shadow";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200";
+                    content.classList.add('hidden');
+                }
+            });
+            if (tab === 'grades-entry') {
+                populateMasterStudentSelect();
+                renderMasterStudentForm();
+            }
+        }
+
+        function generateAutoStudentCode() {
+            const randomCode = 'DAR-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('new-st-code').value = randomCode;
+        }
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-st-name').value.trim();
+            const gradeClass = document.getElementById('new-st-class').value;
+            const code = document.getElementById('new-st-code').value;
+            const photoInput = document.getElementById('new-st-photo');
+
+            const createStudent = (photoBase64 = '') => {
+                db.students.push({ id: Date.now(), name, gradeClass, code, photo: photoBase64 });
+                saveState();
+                populateMasterStudentSelect();
+                renderAdminTables();
+                document.getElementById('new-st-name').value = '';
+                photoInput.value = '';
+                generateAutoStudentCode();
+                alert(currentLang === 'ckb' ? 'قوتابییەکە بە سەرکەوتوویی لەگەڵ وێنەکەی زیادکرا!' : 'Student added successfully with photo!');
+            };
+
+            if (photoInput.files && photoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    createStudent(e.target.result);
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            } else {
+                createStudent('');
+            }
+        }
+
+        function updateStudentPhoto(studentId, fileInput) {
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const stIndex = db.students.findIndex(s => s.id === studentId);
+                    if (stIndex > -1) {
+                        db.students[stIndex].photo = e.target.result;
+                        saveState();
+                        renderAdminTables();
+                        alert(currentLang === 'ckb' ? 'وێنەی قوتابیەکە تازەکرایەوە!' : 'Student photo updated!');
+                    }
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
+        function toggleCodeVisibility(studentId) {
+            visibleCodes[studentId] = !visibleCodes[studentId];
+            renderAdminTables();
+        }
+
+        function copyCode(codeText) {
+            const dummy = document.createElement("input");
+            document.body.appendChild(dummy);
+            dummy.value = codeText;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            alert(currentLang === 'ckb' ? 'کۆدی نهێنی کۆپی کرا!' : 'Secret code copied to clipboard!');
+        }
+
+        function deleteStudent(id) {
+            if (confirm(currentLang === 'ckb' ? 'ئایا دڵنیایت لە سڕینەوە؟' : 'Are you sure?')) {
+                db.students = db.students.filter(s => s.id !== id);
+                saveState();
+                populateMasterStudentSelect();
+                renderAdminTables();
+            }
+        }
+
+        function deleteGrade(id) {
+            if (confirm(currentLang === 'ckb' ? 'ئایا دڵنیایت لە سڕینەوەی ئەم نمرەیە؟' : 'Are you sure you want to delete this grade?')) {
+                db.grades = db.grades.filter(g => g.id !== id);
+                saveState();
+                renderAdminTables();
+                renderMasterStudentForm();
+            }
+        }
+
+        function populateMasterStudentSelect() {
+            const select = document.getElementById('master-student-select');
+            if (!select) return;
+            const currentSelected = select.value;
+            select.innerHTML = db.students.map(s => 
+                `<option value="${s.code}">${s.name} [پۆلی ${s.gradeClass}]</option>`
+            ).join('');
+            if (currentSelected && db.students.some(s => s.code === currentSelected)) {
+                select.value = currentSelected;
+            }
+        }
+
+        function renderMasterStudentForm() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+
+            const studentCode = document.getElementById('master-student-select').value;
+            const week = document.getElementById('master-week-select').value;
+            const tbody = document.getElementById('master-subjects-tbody');
+
+            if (!studentCode) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold">هیچ قوتابییەک نییە</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = allSubjectsList.map((subj, index) => {
+                const gradeRecord = db.grades.find(g => 
+                    g.studentCode === studentCode && 
+                    g.subject === subj.name && 
+                    g.week === week
+                );
+
+                const currentScore = gradeRecord ? gradeRecord.score : '';
+                const currentMax = gradeRecord ? gradeRecord.maxScore : subj.defaultMax;
+                const currentNote = gradeRecord ? gradeRecord.note : '';
+                const isFail = gradeRecord ? isFailingGrade(gradeRecord.score, gradeRecord.maxScore) : false;
+                const inputColor = isFail ? 'text-rose-600 border-rose-400 bg-rose-50' : 'text-darwaza-navy border-slate-300 bg-white';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3.5 font-bold text-slate-800">${subj.name}</td>
+                        <td class="p-3.5 text-center">
+                            <select id="master-max-${index}" onchange="updateMaxScore(${index})" class="px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold bg-slate-50">
+                                <option value="10" ${currentMax === 10 ? 'selected' : ''}>10</option>
+                                <option value="20" ${currentMax === 20 ? 'selected' : ''}>20</option>
+                            </select>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <div class="flex items-center justify-center space-x-1.5 space-x-reverse">
+                                <input type="number" min="0" max="${currentMax}" id="master-score-${index}" 
+                                       value="${currentScore}" placeholder="0-${currentMax}" 
+                                       class="w-24 px-3 py-1.5 border rounded-xl text-center font-black text-base ${inputColor}">
+                                <span id="master-max-label-${index}" class="text-xs text-slate-400 font-extrabold">/ ${currentMax}</span>
+                            </div>
+                        </td>
+                        <td class="p-3.5">
+                            <input type="text" id="master-note-${index}" value="${currentNote}" 
+                                   placeholder="${currentLang === 'ckb' ? 'تێبینی بنووسە...' : 'Add note...'}" 
+                                   class="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-darwaza-gold">
+                            <input type="hidden" id="master-subj-${index}" value="${subj.name}">
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateMaxScore(index) {
+            const maxSelect = document.getElementById(`master-max-${index}`);
+            const scoreInput = document.getElementById(`master-score-${index}`);
+            const maxLabel = document.getElementById(`master-max-label-${index}`);
+            const maxVal = parseInt(maxSelect.value);
+
+            scoreInput.max = maxVal;
+            maxLabel.textContent = `/ ${maxVal}`;
+        }
+
+        function saveMasterStudentGrades(e) {
+            e.preventDefault();
+            const studentCode = document.getElementById('master-student-select').value;
+            const week = document.getElementById('master-week-select').value;
+
+            if (!studentCode) return;
+
+            allSubjectsList.forEach((subj, index) => {
+                const scoreInput = document.getElementById(`master-score-${index}`).value;
+                const maxScore = parseInt(document.getElementById(`master-max-${index}`).value);
+                const noteInput = document.getElementById(`master-note-${index}`).value;
+                const subjectName = document.getElementById(`master-subj-${index}`).value;
+
+                if (scoreInput !== '') {
+                    const score = parseFloat(scoreInput);
+                    const existingIndex = db.grades.findIndex(g => 
+                        g.studentCode === studentCode && 
+                        g.subject === subjectName && 
+                        g.week === week
+                    );
+
+                    if (existingIndex > -1) {
+                        db.grades[existingIndex].score = score;
+                        db.grades[existingIndex].maxScore = maxScore;
+                        db.grades[existingIndex].note = noteInput;
+                    } else {
+                        db.grades.push({
+                            id: Date.now() + index,
+                            studentCode,
+                            subject: subjectName,
+                            week,
+                            score,
+                            maxScore,
+                            note: noteInput
+                        });
+                    }
+                }
+            });
+
+            saveState();
+            renderAdminTables();
+            renderMasterStudentForm();
+            alert(currentLang === 'ckb' ? 'سەرجەم نمرەکانی ئەم قوتابییە بە سەرکەوتوویی پاشەکەوت کران!' : 'All student grades saved successfully!');
+        }
+
+        function renderAdminTables() {
+            const stTbody = document.getElementById('admin-students-tbody');
+            document.getElementById('st-count-badge').textContent = `${db.students.length} ${currentLang === 'ckb' ? 'قوتابی' : 'Students'}`;
+            
+            stTbody.innerHTML = db.students.map(s => {
+                const isVisible = visibleCodes[s.id];
+                const displayCode = isVisible ? s.code : '••••••••';
+                const avatar = s.photo 
+                    ? `<img src="${s.photo}" class="w-10 h-10 rounded-full object-cover border border-darwaza-gold shadow-sm">`
+                    : `<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user"></i></div>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3.5">
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                ${avatar}
+                                <label class="cursor-pointer text-xs text-darwaza-gold hover:underline font-bold" title="گۆڕینی وێنە">
+                                    <i class="fa-solid fa-camera ml-1"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="updateStudentPhoto(${s.id}, this)">
+                                </label>
+                            </div>
+                        </td>
+                        <td class="p-3.5 font-bold text-slate-800">${s.name}</td>
+                        <td class="p-3.5"><span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-xs font-bold">پۆلی ${s.gradeClass}</span></td>
+                        <td class="p-3.5 font-mono text-sm font-bold text-indigo-900">
+                            <span class="bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg tracking-wider">${displayCode}</span>
+                        </td>
+                        <td class="p-3.5 text-center flex justify-center space-x-2 space-x-reverse">
+                            <button onclick="toggleCodeVisibility(${s.id})" title="نیشاندان/شاراوە" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                                <i class="fa-solid ${isVisible ? 'fa-eye-slash text-rose-500' : 'fa-eye text-darwaza-navy'}"></i>
+                            </button>
+                            <button onclick="copyCode('${s.code}')" title="کۆپی کردنی کۆد" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <button onclick="deleteStudent(${s.id})" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2 py-1.5 rounded-lg text-xs transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const grTbody = document.getElementById('admin-grades-tbody');
+            grTbody.innerHTML = db.grades.map(g => {
+                const student = db.students.find(s => s.code === g.studentCode);
+                const isFail = isFailingGrade(g.score, g.maxScore);
+                const scoreColorClass = isFail ? 'text-rose-600 font-black' : 'text-emerald-600 font-black';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3.5 font-bold text-slate-800">${student ? student.name : 'Unknown'}</td>
+                        <td class="p-3.5 text-xs font-bold">${student ? student.gradeClass : '-'}</td>
+                        <td class="p-3.5 font-semibold text-darwaza-navy">${g.subject}</td>
+                        <td class="p-3.5 text-xs text-slate-500 font-bold">${g.week}</td>
+                        <td class="p-3.5 ${scoreColorClass} text-base">${g.score}</td>
+                        <td class="p-3.5 font-bold text-slate-400">/ ${g.maxScore}</td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="deleteGrade(${g.id})" class="text-rose-600 hover:text-rose-800 p-1 rounded transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderStudentDashboard() {
+            if (!currentUser || currentUser.role !== 'student') return;
+
+            const st = currentUser.data;
+            document.getElementById('st-profile-name').textContent = st.name;
+            document.getElementById('st-profile-class-text').textContent = `${currentLang === 'ckb' ? 'پۆلی' : 'Grade'} ${st.gradeClass} • ${currentLang === 'ckb' ? 'کارتی نمرەی دەستنیشانکراوی هەفتانە' : 'Weekly Grade Report Card'}`;
+
+            // Render Student Avatar Photo
+            const avatarContainer = document.getElementById('st-avatar-container');
+            if (st.photo) {
+                avatarContainer.innerHTML = `<img src="${st.photo}" class="w-full h-full object-cover">`;
+            } else {
+                avatarContainer.innerHTML = `<i class="fa-solid fa-user-graduate text-3xl"></i>`;
+            }
+
+            const studentGrades = db.grades.filter(g => g.studentCode === st.code);
+            const tbody = document.getElementById('student-grades-tbody');
+
+            if (studentGrades.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-slate-400 font-bold">
+                            <i class="fa-solid fa-folder-open text-3xl mb-2 block"></i>
+                            ${currentLang === 'ckb' ? 'هیچ نمرەیەکی تۆمارکراو بۆ ئەم قوتابییە نەدۆزرایەوە.' : 'No recorded grades available.'}
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('st-overall-avg').textContent = '0%';
+                document.getElementById('st-subjects-count').textContent = '0';
+                document.getElementById('st-performance-status').textContent = '-';
+                return;
+            }
+
+            let totalPercentage = 0;
+
+            tbody.innerHTML = studentGrades.map(g => {
+                const percentage = Math.round((g.score / g.maxScore) * 100);
+                totalPercentage += percentage;
+
+                const isFail = isFailingGrade(g.score, g.maxScore);
+
+                let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                let scoreDisplayClass = "text-darwaza-navy";
+
+                if (isFail) {
+                    badgeColor = "bg-rose-100 text-rose-800 border-rose-300 font-black";
+                    scoreDisplayClass = "text-rose-600 font-black";
+                } else if (percentage < 75) {
+                    badgeColor = "bg-amber-100 text-amber-800 border-amber-200";
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition ${isFail ? 'bg-rose-50/40' : ''}">
+                        <td class="p-4 font-bold text-slate-800">${g.subject}</td>
+                        <td class="p-4 text-xs font-bold text-slate-500">${g.week}</td>
+                        <td class="p-4 font-black text-lg ${scoreDisplayClass}">${g.score}</td>
+                        <td class="p-4 font-bold text-slate-400">/ ${g.maxScore}</td>
+                        <td class="p-4">
+                            <span class="${badgeColor} border px-3 py-1 rounded-full text-xs font-extrabold">
+                                %${percentage}
+                            </span>
+                        </td>
+                        <td class="p-4 text-xs font-semibold text-slate-600">${g.note || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const avg = Math.round(totalPercentage / studentGrades.length);
+            document.getElementById('st-overall-avg').textContent = `${avg}%`;
+            document.getElementById('st-subjects-count').textContent = studentGrades.length;
+
+            let statusText = currentLang === 'ckb' ? 'زۆر باش / Excellent' : 'Excellent';
+            if (avg < 50) statusText = currentLang === 'ckb' ? 'پێویستی بە تێکۆشانە / Needs Work' : 'Needs Work';
+            else if (avg < 75) statusText = currentLang === 'ckb' ? 'باش / Good' : 'Good';
+            
+            document.getElementById('st-performance-status').textContent = statusText;
+        }
+
+        window.onload = function() {
+            updateLanguageUI();
+        };
+    </script>
+</body>
+</html>
