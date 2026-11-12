@@ -13,7 +13,6 @@ import InstallButton from './InstallButton';
 export const NAV = [
   { section: 'navOverview', items: [
     { to: '/', key: 'navHome', icon: LayoutDashboard, perms: ['dashboard.school', 'grades.enter'], end: true },
-    { to: '/portal', key: 'navMyGrades', icon: GraduationCap, perms: ['self.grades'] },
   ] },
   { section: 'navGrades', items: [
     { to: '/approvals', key: 'navApprovals', icon: ClipboardCheck, perms: ['grades.approve'], badge: 'approvals' },

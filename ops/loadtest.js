@@ -43,7 +43,7 @@ async function pool(items, conc, fn) {
   const results = {};
   if (!process.env.ONLY_WRITES) {
   // ---- A: logins ----
-  const usernames = Array.from({ length: N }, (_, i) => `DPS-2026-${String(i + 1).padStart(4, '0')}`);
+  const usernames = Array.from({ length: N }, (_, i) => `DAR-${String(i + 1).padStart(4, '0')}`);
   const tA = performance.now();
   const sessions = await pool(usernames, 25, (u) => login(u));
   const lat = sessions.map((s) => s.ms);

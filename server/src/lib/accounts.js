@@ -16,7 +16,7 @@ async function createAccount(c, { username, fullName, email = null, roles, passw
 }
 
 async function nextStudentNo(c) {
-  const r = await c.query(`SELECT 'DPS-' || to_char(now(),'YYYY') || '-' || lpad(nextval('student_no_seq')::text, 4, '0') AS no`);
+  const r = await c.query(`SELECT 'DAR-' || lpad(nextval('student_no_seq')::text, 4, '0') AS no`);
   return r.rows[0].no;
 }
 async function nextStaffNo(c) {

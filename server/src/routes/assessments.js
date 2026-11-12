@@ -31,12 +31,12 @@ async function notify(c, userIds, kind, payload) {
 
 router.get('/', ah(async (req, res) => {
   const q = parse(page.extend({ termId: id.optional(), sectionId: id.optional(), subjectId: id.optional(), yearId: id.optional(),
-    status: z.enum(['draft', 'submitted', 'approved', 'published', 'returned']).optional() }), req.query);
+    status: z.enum(['draft', 'submitted', 'approved', 'published', 'returned']).optional(), week: z.coerce.number().int().min(1).max(60).optional() }), req.query);
   const all = has(req, 'grades.read_all') || has(req, 'grades.manage_all') || has(req, 'grades.approve');
-  const params = [q.termId ?? null, q.sectionId ?? null, q.subjectId ?? null, q.status ?? null, q.yearId ?? null, !all, req.user.id];
+  const params = [q.termId ?? null, q.sectionId ?? null, q.subjectId ?? null, q.status ?? null, q.yearId ?? null, !all, req.user.id, q.week ?? null];
   const where = `WHERE ($1::int IS NULL OR a.term_id = $1) AND ($2::int IS NULL OR a.section_id = $2)
       AND ($3::int IS NULL OR a.subject_id = $3) AND ($4::text IS NULL OR a.status = $4)
-      AND ($5::int IS NULL OR t.academic_year_id = $5)
+      AND ($5::int IS NULL OR t.academic_year_id = $5) AND ($8::int IS NULL OR a.week_no = $8)
       AND (NOT $6 OR EXISTS (SELECT 1 FROM teacher_assignments ta JOIN teachers tt ON tt.id = ta.teacher_id
              WHERE ta.section_id = a.section_id AND ta.subject_id = a.subject_id AND tt.user_id = $7))`;
   const from = `FROM assessments a JOIN terms t ON t.id = a.term_id JOIN sections sec ON sec.id = a.section_id
@@ -54,7 +54,7 @@ router.get('/', ah(async (req, res) => {
             (SELECT u.full_name FROM grade_approvals ga JOIN users u ON u.id = ga.acted_by
               WHERE ga.assessment_id = a.id AND ga.action = 'submit' ORDER BY ga.acted_at DESC LIMIT 1) AS submitted_by,
             a.version
-       ${from} ${where} ORDER BY a.updated_at DESC LIMIT $8 OFFSET $9`, [...params, q.pageSize, (q.page - 1) * q.pageSize]);
+       ${from} ${where} ORDER BY a.updated_at DESC LIMIT $9 OFFSET $10`, [...params, q.pageSize, (q.page - 1) * q.pageSize]);
   res.json({ items: rows, total, page: q.page, pageSize: q.pageSize });
 }));
 

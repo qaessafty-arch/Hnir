@@ -30,7 +30,7 @@ npm run build --prefix client && npm start --prefix server   # http://localhost:
 # or for UI work: npm run dev --prefix server  +  npm run dev --prefix client (http://localhost:5173)
 ```
 
-Demo accounts (dev only, password `Passw0rd!demo`): `demo.admin`, `demo.principal`, `demo.registrar`, `demo.auditor`, `demo.teacher1`…`6`, students `DPS-2026-0001`….
+Demo accounts (dev only, password `Passw0rd!demo`): `demo.admin`, `demo.principal`, `demo.registrar`, `demo.auditor`, `demo.teacher1`…`6`, students `DAR-0001`….
 
 For production, **do not seed demo data**. Create the first administrator with `node server/scripts/bootstrap-admin.js <username> "<Full Name>"`, then follow [deployment](docs/05-HANDOVER.md#8-deployment-production).
 
@@ -38,7 +38,7 @@ For production, **do not seed demo data**. Create the first administrator with `
 
 ```bash
 createdb -O darwaza darwaza_test
-npm test --prefix server                       # 46 unit + integration/security tests (real PostgreSQL)
+npm test --prefix server                       # 48 unit + integration/security tests (real PostgreSQL)
 node e2e/smoke.js http://localhost:3000 out    # browser test: roles × languages × viewports (needs demo data)
 node e2e/pwa.js http://localhost:3000          # installable-app checks (manifest, service worker, offline, no data cached)
 node ops/loadtest.js http://localhost:3000 1000 30   # load test (separate DB seeded with 1000 students, LOGIN_RATE_LIMIT raised)

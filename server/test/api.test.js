@@ -385,7 +385,7 @@ test.describe('bulk import', () => {
     assert.strictEqual((await h.db.query('SELECT count(*)::int n FROM students')).rows[0].n, before);
     const ok = await reg.post('/api/students/import/commit').send({ yearId: ids.year, rows: [rows[0], { full_name_ckb: 'دیار', grade_level: 10, section: 'b' }] });
     assert.strictEqual(ok.status, 201); assert.strictEqual(ok.body.created.length, 2);
-    assert.ok(ok.body.created.every((c) => c.initial_password && c.username.startsWith('DPS-')));
+    assert.ok(ok.body.created.every((c) => c.initial_password && /^DAR-\d{4}$/.test(c.username)));
   });
 });
 
@@ -519,5 +519,49 @@ test.describe('account types managed by the super administrator', () => {
     const rs = await h.login('registrar1');
     assert.strictEqual((await rs.get('/api/dashboard')).status, 403);
     await sa.put('/api/roles/registrar').send({ name_en: reg.name_en, name_ckb: reg.name_ckb, sections: reg.sections });
+  });
+});
+
+test.describe('weekly grade card and behavior evaluations', () => {
+  let weekAid;
+  test.before(async () => {
+    const t = await h.login('teacherA');
+    const a = (await t.post('/api/assessments').send({ term_id: ids.term, section_id: ids.secA, subject_id: ids.math, category_id: ids.weekly, title: 'Weekly W7', week_no: 7, max_score: 10 })).body;
+    weekAid = a.id;
+    const roster = (await t.get(`/api/assessments/${a.id}`)).body.roster;
+    await t.put(`/api/assessments/${a.id}/grades`).send({ rows: roster.map((r) => ({ student_id: r.student_id, score: r.student_id === ids.students[0] ? 6 : 9, comment: r.student_id === ids.students[0] ? 'Keep practising' : null })) });
+  });
+
+  test('student sees only published weeks; values come from the records', async () => {
+    const s = await h.login('stu1');
+    let r = await s.get(`/api/weekly/students/${ids.students[0]}`);
+    assert.strictEqual(r.status, 200);
+    assert.ok(!r.body.weeks.includes(7), 'unpublished week hidden');
+    await h.db.query("UPDATE assessments SET status='published' WHERE id=$1", [weekAid]);
+    r = await s.get(`/api/weekly/students/${ids.students[0]}?week=7`);
+    assert.strictEqual(r.body.week, 7);
+    assert.ok(r.body.rows.every((x) => x.week_no === 7), 'weeks never mixed');
+    const row = r.body.rows.find((x) => x.title === 'Weekly W7');
+    assert.strictEqual(row.score, 6); assert.strictEqual(row.percent, 60); assert.strictEqual(row.comment, 'Keep practising');
+    assert.strictEqual(r.body.week_summary.scale_max, 10);
+    assert.strictEqual((await s.get(`/api/weekly/students/${ids.students[1]}`)).status, 404); // other student
+  });
+
+  test('behavior: homeroom teacher or principal only; students see published only', async () => {
+    const t = await h.login('teacherA');
+    assert.strictEqual((await t.get(`/api/behavior?sectionId=${ids.secA}&termId=${ids.term}&week=7`)).status, 404); // not homeroom
+    await h.db.query('UPDATE sections SET homeroom_teacher_id=$1 WHERE id=$2', [ids.teacherA, ids.secA]);
+    const draft = await t.put('/api/behavior').send({ section_id: ids.secA, term_id: ids.term, week_no: 7, rows: [{ student_id: ids.students[0], rating: 'very_good', comment: 'Helpful' }] });
+    assert.strictEqual(draft.body.saved, 1);
+    const s = await h.login('stu1');
+    assert.strictEqual((await s.get(`/api/weekly/students/${ids.students[0]}?week=7`)).body.behavior, null, 'draft hidden');
+    await t.put('/api/behavior').send({ section_id: ids.secA, term_id: ids.term, week_no: 7, publish: true, rows: [{ student_id: ids.students[0], rating: 'very_good', comment: 'Helpful' }] });
+    const b = (await s.get(`/api/weekly/students/${ids.students[0]}?week=7`)).body.behavior;
+    assert.strictEqual(b.rating, 'very_good'); assert.strictEqual(b.comment, 'Helpful');
+    assert.strictEqual((await t.put('/api/behavior').send({ section_id: ids.secA, term_id: ids.term, week_no: 7, rows: [{ student_id: ids.students[3], rating: 'good' }] })).body.error.code, 'student_not_in_section');
+    assert.strictEqual((await (await h.login('teacherB')).get(`/api/behavior?sectionId=${ids.secA}&termId=${ids.term}&week=7`)).status, 404);
+    assert.strictEqual((await s.put('/api/behavior').send({ section_id: ids.secA, term_id: ids.term, week_no: 7, rows: [{ student_id: ids.students[0], rating: 'excellent' }] })).status, 404);
+    const hist = await h.db.query('SELECT count(*)::int n FROM behavior_history');
+    assert.ok(hist.rows[0].n >= 2);
   });
 });

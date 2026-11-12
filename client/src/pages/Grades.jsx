@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, History, Save, Send, CheckCircle2, Undo2, Globe2, EyeOff, Trash2, RefreshCw, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Smile, Search, Plus, History, Save, Send, CheckCircle2, Undo2, Globe2, EyeOff, Trash2, RefreshCw, AlertTriangle, ClipboardList } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, normalizeDigits, ltr } from '../lib/api';
@@ -27,7 +27,8 @@ export function GradesPage() {
   const { t, fmtNum, pick } = useI18n();
   const { can } = useAuth();
   const [sp, setSp] = useSearchParams();
-  const { current: year } = useYears();
+  const { years, current } = useYears();
+  const year = years.find((y) => String(y.id) === sp.get('yearId')) || current;
   const terms = useApi('/academic/terms', { yearId: year?.id }, { skip: !year });
   const sections = useApi('/academic/sections', { yearId: year?.id }, { skip: !year });
   const subjects = useApi('/academic/subjects');
@@ -36,9 +37,10 @@ export function GradesPage() {
   const subjectId = sp.get('subjectId') || '';
   const termId = sp.get('termId') || '';
   const status = sp.get('status') || '';
+  const week = sp.get('week') || '';
   const page = Number(sp.get('page') || 1);
   const set = (k, v) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); if (k !== 'page') n.delete('page'); setSp(n, { replace: true }); };
-  const list = useApi('/assessments', { sectionId, subjectId, termId, status, yearId: year?.id, page, pageSize: 25 }, { skip: !year });
+  const list = useApi('/assessments', { sectionId, subjectId, termId, status, week, yearId: year?.id, page, pageSize: 25 }, { skip: !year });
   const [creating, setCreating] = useState(false);
   const allowedSubjects = useMemo(() => {
     const all = (subjects.data?.items || []).filter((s) => s.is_active);
@@ -50,13 +52,16 @@ export function GradesPage() {
   return (
     <>
       <PageHead title={t('navGradeSheets')} sub={t('gradesHelp')}>
+        <Link className="btn btn-secondary" to="/grades/behavior"><Smile size={18} />{t('behaviorTitle')}</Link>
         <button type="button" className="btn btn-primary" disabled={!canCreate} onClick={() => setCreating(true)} title={!canCreate ? t('selectClassSubject') : undefined}><Plus size={18} />{t('newAssessment')}</button>
       </PageHead>
       <div className="card">
         <div className="filters">
+          <Field label={t('year')}>{(p) => <select {...p} className="select" value={year?.id || ''} onChange={(e) => { const n = new URLSearchParams(); n.set('yearId', e.target.value); setSp(n, { replace: true }); }}>{years.map((y) => <option key={y.id} value={y.id}>{ltr(y.name)}</option>)}</select>}</Field>
           <Field label={t('term')}>{(p) => <select {...p} className="select" value={termId} onChange={(e) => set('termId', e.target.value)}><option value="">{t('all')}</option>{(terms.data?.items || []).map((x) => <option key={x.id} value={x.id}>{pick(x)}</option>)}</select>}</Field>
           <Field label={t('section')}>{(p) => <select {...p} className="select" value={sectionId} onChange={(e) => set('sectionId', e.target.value)}><option value="">{t('all')}</option>{(sections.data?.items || []).map((s) => <option key={s.id} value={s.id}>{sectionLabel(t, fmtNum, s)}</option>)}</select>}</Field>
           <Field label={t('subject')}>{(p) => <select {...p} className="select" value={subjectId} onChange={(e) => set('subjectId', e.target.value)}><option value="">{t('all')}</option>{allowedSubjects.map((s) => <option key={s.id} value={s.id}>{pick(s)}</option>)}</select>}</Field>
+          <Field label={t('week')}>{(p) => <select {...p} className="select" value={week} onChange={(e) => set('week', e.target.value)}><option value="">{t('all')}</option>{Array.from({ length: 40 }, (_, i) => i + 1).map((w) => <option key={w} value={w}>{t('weekN', { n: fmtNum(w) })}</option>)}</select>}</Field>
           <Field label={t('status')}>{(p) => <select {...p} className="select" value={status} onChange={(e) => set('status', e.target.value)}><option value="">{t('all')}</option>{['draft', 'returned', 'submitted', 'approved', 'published'].map((x) => <option key={x} value={x}>{t(`gs_${x}`)}</option>)}</select>}</Field>
         </div>
         {list.error ? <ErrorState error={list.error} onRetry={list.reload} /> : (
@@ -137,6 +142,7 @@ export function GradeSheetPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [transition, setTransition] = useState(null);
   const inputs = useRef({});
+  const [find, setFind] = useState('');
 
   const dirtyCount = Object.keys(edits).length;
   useEffect(() => {
@@ -277,7 +283,11 @@ export function GradeSheetPage() {
             {pending > 0 && <span className="badge badge-warn">{t('pendingCount', { n: fmtNum(pending) })}</span>}
             {perms.edit && pending > 0 && <button type="button" className="btn btn-ghost btn-sm" onClick={markRestMissing}>{t('markRestMissing')}</button>}
           </div>
-          {editable && <span className="muted small">{t('fillTip')}</span>}
+          <div className="row">
+            <div style={{ position: 'relative' }}><Search size={15} style={{ position: 'absolute', insetInlineStart: 10, insetBlockStart: 10, color: 'var(--ink-3)' }} aria-hidden="true" />
+              <input className="input input-sm" style={{ paddingInlineStart: 32, inlineSize: 220 }} type="search" placeholder={t('findStudent')} aria-label={t('findStudent')} value={find} onChange={(e) => setFind(e.target.value)} /></div>
+            {editable && <span className="muted small">{t('fillTip')}</span>}
+          </div>
         </div>
         <div className="table-wrap">
           <table className="table">
@@ -285,6 +295,7 @@ export function GradeSheetPage() {
             <tbody>
               {roster.length === 0 && <tr><td colSpan={7}><Empty title={t('noStudents')} /></td></tr>}
               {roster.map((r, idx) => {
+                if (find && !`${r.full_name_ckb} ${r.full_name_en || ''} ${r.student_no}`.toLowerCase().includes(find.toLowerCase())) return null;
                 const v = valueOf(r);
                 const err = rowErrors[r.student_id] || (edits[r.student_id] && clientErrors[r.student_id]);
                 const pct = v.status === 'graded' && !validateScore(v.score, a.max_score, data.policy) ? (Number(normalizeDigits(v.score)) / a.max_score) * 100 : null;

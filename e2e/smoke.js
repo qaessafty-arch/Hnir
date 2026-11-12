@@ -77,6 +77,8 @@ async function shot(page, name, path) {
     await shot(page, `25-setup-classes-${lang}`, '/setup?tab=classes');
     await shot(page, `26-system-audit-${lang}`, '/system?tab=audit');
     await shot(page, `27-import-${lang}`, '/students/import');
+    await shot(page, `31-student-weekly-staff-${lang}`, '/students/1/weekly');
+    await shot(page, `32-behavior-${lang}`, '/grades/behavior');
     await ctx.close();
   }
   {
@@ -108,12 +110,18 @@ async function shot(page, name, path) {
     await ctx.close();
   }
   {
-    const { ctx, page } = await session(browser, 'DPS-2026-0001', { lang: 'ckb' });
+    const { ctx, page } = await session(browser, 'DAR-0001', { lang: 'ckb' });
+    await page.waitForSelector('.wk-table');
     await shot(page, '40-student-portal-ckb');
+    await page.click('.wk-history summary'); await shot(page, '40b-student-history-ckb');
+    await page.click('.wk-print'); await page.waitForSelector('.a4-table');
+    await page.screenshot({ path: `${OUT}/44-print-report-screen.png`, fullPage: true });
+    await page.emulateMedia({ media: 'print' });
+    await page.pdf({ path: `${OUT}/weekly-report-card.pdf`, format: 'A4', printBackground: true });
     await ctx.close();
   }
   {
-    const { ctx, page } = await session(browser, 'DPS-2026-0001', { lang: 'en' });
+    const { ctx, page } = await session(browser, 'DAR-0001', { lang: 'en' });
     await shot(page, '41-student-portal-en');
     await page.emulateMedia({ media: 'print' });
     await page.screenshot({ path: `${OUT}/42-student-print.png`, fullPage: true });
@@ -121,7 +129,7 @@ async function shot(page, name, path) {
     await ctx.close();
   }
   for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'], ['demo.principal', '/results', '55-mobile-results'], ['demo.principal', '/approvals', '56-mobile-approvals'], ['demo.teacher1', '/grades/sheet/1', '60-mobile-grade-entry'], ['demo.admin', '/system?tab=types', '61-mobile-account-types'],
-    ['DPS-2026-0001', '/portal', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
+    ['DAR-0001', '/', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
     const { ctx, page } = await session(browser, u, { lang: 'ckb', viewport: { width: 390, height: 844 } });
     await shot(page, name, path);
     if (name === '50-mobile-dashboard') {

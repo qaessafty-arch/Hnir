@@ -100,3 +100,19 @@ Charts follow the dataviz rules: single series with direct value labels, one hue
 | Tablet 641–1100 px | Slim **icon rail** (icon + short label) instead of the full sidebar; 2-column headline numbers; single-column charts in portrait |
 | Laptop 1101–1599 px | Full sidebar with section headings |
 | Large ≥ 1600 px | Wider sidebar and content, slightly larger text |
+
+## 3.9 Student Weekly Grade Card (reference design)
+
+Built from the school's reference screenshot:
+- full-width **navy header**: logo, Kurdish name, English name and subtitle, user badge, gold language button, red logout;
+- white **profile card**: photo, name, **DAR-0001** ID, class, year, term, gold **Print grade card** button;
+- **three summary cards** with coloured side accents: *Overall performance* (emerald when passing), *Weekly average* (with the 0–10 scale when all subjects share it), *Behavior evaluation*;
+- **week navigation**: year, term, week selector with previous/next;
+- the **Weekly Student Grade Card** table: Subject, Week, Obtained, Maximum, Percentage, Teacher comments;
+- an expandable **Performance history**: term averages, weekly averages chart, subject-by-subject progress with week-to-week change.
+
+Percentage badges: 90–100 green, 70–89 light green, 50–69 amber, below 50 light red. Rows below the subject's pass mark get a soft red tint and a red mark. All values come from published database records; percentage = obtained ÷ maximum × 100. On phones the repeated Week column is hidden so marks, percentages and comments fit without scrolling.
+
+**Print grade card** opens a dedicated A4 page (`/print/report/:id`): logo, school names, photo, name, DAR ID, class, year, term, week, subject table, weekly average, overall performance, behavior, signatures and generation date. App navigation is never printed.
+
+Staff open the same card from *Students → student → Weekly grade card*. Behavior evaluations are entered in *Grade sheets → Behavior evaluation*.

@@ -279,6 +279,10 @@ The menu has 8 items. Start every day on **Home**.
 
 ## 14. Teacher guide
 
+- **Behavior evaluation** (Grade sheets → *Behavior evaluation*): homeroom teachers (and the principal) pick class, term and week, choose Excellent / Very good / Good / Average / Needs improvement for each student ("Fill empty with" sets all at once), add an optional comment, then **Save draft** or **Publish to students**. Every change is kept in history.
+- Grade sheets can be filtered by year and **week**; inside a sheet use *Find a student* to jump to one student.
+
+
 1. Sign in, change your first password, and open **My Classes** on the dashboard.
 2. Click **Enter grades** on a class/subject → **New grade sheet** → choose the term and category, enter the week number (the title fills in automatically) and the max score.
 3. Type the scores. **Enter** moves to the next student, ↑/↓ move between rows. Kurdish digits work. Invalid scores turn red with the reason.
@@ -290,9 +294,14 @@ The menu has 8 items. Start every day on **Home**.
 
 ## 15. Student guide
 
-- Sign in with your student number (e.g. `DPS-2026-0001`) and the password from the school office, then choose a new password.
-- **My Grades** shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback. Choose a term or the whole year. **Print** gives an A4 report card.
+- Sign in with your student ID (e.g. `DAR-0001`) and the password from the school office, then choose a new password.
+- **My Grades** opens your **Weekly Student Grade Card**: overall performance, weekly average, behavior evaluation, and a table of every subject for the chosen week (obtained mark, maximum, percentage, teacher comment). Use the week arrows or choose a year/term/week. *Performance history* shows your weekly averages and each subject's progress. **Print grade card** opens a separate A4 report card ready to print or save as PDF.
+- It also shows your overall average, each subject's percentage and pass status, and every published assessment with teacher feedback. Choose a term or the whole year. **Print** gives an A4 report card.
 - Only grades the school has made visible are shown. Forgot your password? Ask the school office for a reset code and use *I have a reset code* on the login page.
+
+## 15a. Student IDs
+
+Student IDs are permanent and use the format **DAR-0001** (migration 005 renumbered existing students in creation order). A student's username is their ID. If real students already had accounts, give them their new ID; their passwords are unchanged.
 
 ## 16. Installable app (PWA)
 

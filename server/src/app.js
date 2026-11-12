@@ -61,6 +61,8 @@ function createApp() {
   api.use('/assessments', require('./routes/assessments'));
   api.use('/reports', require('./routes/reports'));
   api.use('/analytics', require('./routes/analytics'));
+  api.use('/weekly', require('./routes/weekly'));
+  api.use('/behavior', require('./routes/behavior'));
   api.use('/', require('./routes/misc'));
   api.use((_req, _res, next) => next(new AppError(404, 'not_found')));
   app.use('/api', api);

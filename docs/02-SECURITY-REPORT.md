@@ -80,6 +80,8 @@ Status meanings:
 
 **Configurable account types:** the super administrator can change which sections each account type may use (`/api/roles`, permission `roles.manage`). Sections translate to permissions in `server/src/lib/sections.js`; `system.settings`, `roles.manage` and `backups.manage` are never grantable; the super_admin and student types are locked. Changing or suspending a type ends its users' sessions immediately; users whose types are all suspended cannot sign in (`account_type_suspended`). All changes are audited. Tested in `api.test.js` › *account types managed by the super administrator*. The matrix below is the **default** configuration.
 
+**Weekly card & behavior:** `/api/weekly/students/:id` uses the same object-level check as report cards (students: own, published only; teachers: their subjects). `/api/behavior` is limited to `grades.manage_all` or the homeroom teacher of the section; students outside the section are rejected; drafts are invisible to students; changes are written to `behavior_history` and the audit log.
+
 **Removed:** the Parent/Guardian role (and its tables) was removed at the school's request (migration `003_remove_parent_role.sql`). Former parent-only accounts are disabled and soft-deleted, kept for audit history.
 
 ## 2.4 Known limitations and recommendations (not done)

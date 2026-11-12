@@ -18,6 +18,22 @@ const LAST = ['کەمال', 'ئەحمەد', 'ڕێبوار', 'سامان', 'عو�
 const FIRST_EN = ['Aryan', 'Sara', 'Raz', 'Alan', 'Hevi', 'Dana', 'Shilan', 'Karwan', 'Rozhan', 'Bahar', 'Azad', 'Nazdar', 'Hawre', 'Zhila', 'Soran', 'Dilan'];
 const LAST_EN = ['Kamal', 'Ahmed', 'Rebwar', 'Saman', 'Omar', 'Hasan', 'Mohammed', 'Ali', 'Jamal', 'Farhad'];
 
+/** Demo-only additions that may be missing from older demo databases (safe to run repeatedly). */
+async function topUpDemo() {
+  const has = (await db.query('SELECT count(*)::int n FROM behavior_evaluations')).rows[0].n;
+  if (has > 0) return;
+  const ratings = ['excellent', 'very_good', 'very_good', 'good', 'good', 'average', 'needs_improvement'];
+  await db.query(
+    `INSERT INTO behavior_evaluations (student_id, term_id, week_no, rating, comment, status)
+     SELECT e.student_id, t.id, w, ($1::text[])[1 + ((e.student_id * 3 + w * 5) % 7)], NULL, 'published'
+       FROM enrollments e JOIN academic_years y ON y.id = e.academic_year_id AND y.is_current
+       JOIN terms t ON t.academic_year_id = y.id AND t.ordinal = 1
+       CROSS JOIN generate_series(1, 2) AS w
+      WHERE e.status = 'active'
+     ON CONFLICT DO NOTHING`, [ratings]);
+  console.log('Demo behavior evaluations added.');
+}
+
 async function main() {
   const n = Number(process.argv.find((a) => /^\d+$/.test(a)) || 60);
   const pwArg = process.argv.find((a) => a.startsWith('--password='));
@@ -63,7 +79,7 @@ async function main() {
     }
     const studentRole = await role('student');
     for (let i = 0; i < n; i++) {
-      const no = (await c.query(`SELECT 'DPS-2026-' || lpad(nextval('student_no_seq')::text,4,'0') AS no`)).rows[0].no;
+      const no = (await c.query(`SELECT 'DAR-' || lpad(nextval('student_no_seq')::text,4,'0') AS no`)).rows[0].no;
       const fi = i % FIRST.length, li = (i * 7) % LAST.length;
       const u = await c.query(`INSERT INTO users (username, full_name, password_hash, must_change_password) VALUES ($1,$2,$3,false) RETURNING id`,
         [no, `${FIRST[fi]} ${LAST[li]}`, hash]);
@@ -90,9 +106,13 @@ async function main() {
       }
     }
   });
+  await topUpDemo();
   // Demo accounts skip MFA enrolment so local testing is quick.
   await db.query(`UPDATE system_settings SET value = jsonb_set(value, '{mfa_required_roles}', '[]') WHERE key='security'`);
   console.log(`Demo data created: ${n} students. All demo accounts use password "${password}". MFA requirement disabled for demo.`);
   await db.pool.end();
 }
-main().catch((e) => { console.error(e.message); process.exit(e.already ? 0 : 1); });
+main().catch(async (e) => {
+  if (e.already) { console.error(e.message); try { await topUpDemo(); } finally { await db.pool.end().catch(() => {}); } process.exit(0); }
+  console.error(e.message); process.exit(1);
+});

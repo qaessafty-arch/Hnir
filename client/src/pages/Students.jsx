@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, Camera, KeyRound, Archive, Pencil, FileText, Copy, Printer } from 'lucide-react';
+import { Plus, Search, Camera, KeyRound, Archive, Pencil, FileText, Copy, Printer, CalendarDays } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, resizeImage } from '../lib/api';
@@ -184,6 +184,7 @@ export function StudentDetailPage() {
   return (
     <>
       <PageHead title={s.full_name_ckb} sub={<><Code>{s.student_no}</Code>{s.full_name_en && <> · <bdi dir="ltr">{s.full_name_en}</bdi></>}</>}>
+        <Link className="btn btn-gold" to={`/students/${s.id}/weekly`}><CalendarDays size={16} />{t('weeklyGradeCard')}</Link>
         <Link className="btn btn-secondary" to={`/reports/student/${s.id}`}><FileText size={16} />{t('reportCard')}</Link>
         {can('students.write') && <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}><Pencil size={16} />{t('edit')}</button>}
         {can('students.write') && <button type="button" className="btn btn-secondary" onClick={resetCreds}><KeyRound size={16} />{t('resetCredentials')}</button>}
