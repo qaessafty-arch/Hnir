@@ -9,7 +9,9 @@ const db = require('../src/lib/db');
 const { migrate } = require('../src/migrate');
 const { hashPassword } = require('../src/lib/passwords');
 
-if (config.isProd) { console.error('Refusing to seed demo data in production/staging.'); process.exit(1); }
+// A disposable public TEST instance may opt in explicitly; real production never sets this flag.
+const allowDemo = process.env.ALLOW_DEMO_SEED === 'yes-this-is-a-disposable-test-instance';
+if (config.isProd && !allowDemo) { console.error('Refusing to seed demo data in production/staging.'); process.exit(1); }
 
 const FIRST = ['ئاریان', 'سارا', 'ڕاز', 'ئالان', 'هێڤی', 'دانا', 'شیلان', 'کاروان', 'ڕۆژان', 'بەهار', 'ئازاد', 'نازدار', 'هاوڕێ', 'ژیلا', 'سۆران', 'دیلان'];
 const LAST = ['کەمال', 'ئەحمەد', 'ڕێبوار', 'سامان', 'عومەر', 'حەسەن', 'محەمەد', 'عەلی', 'جەمال', 'فەرهاد'];
@@ -23,7 +25,7 @@ async function main() {
   await migrate();
   const hash = await hashPassword(password);
   await db.tx(async (c) => {
-    if ((await c.query("SELECT 1 FROM users WHERE username = 'demo.admin'")).rowCount) throw new Error('Demo data already seeded');
+    if ((await c.query("SELECT 1 FROM users WHERE username = 'demo.admin'")).rowCount) throw Object.assign(new Error('Demo data already seeded'), { already: true });
     const role = async (key) => (await c.query('SELECT id FROM roles WHERE key=$1', [key])).rows[0].id;
     const mkUser = async (username, full, roleKey) => {
       const u = await c.query(`INSERT INTO users (username, full_name, password_hash, must_change_password) VALUES ($1,$2,$3,false) RETURNING id`, [username, full, hash]);
@@ -100,4 +102,4 @@ async function main() {
   console.log(`Demo data created: ${n} students. All demo accounts use password "${password}". MFA requirement disabled for demo.`);
   await db.pool.end();
 }
-main().catch((e) => { console.error(e.message); process.exit(1); });
+main().catch((e) => { console.error(e.message); process.exit(e.already ? 0 : 1); });

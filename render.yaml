@@ -1,0 +1,37 @@
+# Render Blueprint — a disposable PUBLIC TEST instance of the Darwaza School Management System
+# with demo data (fake students; all demo accounts use the password Passw0rd!demo).
+# Do NOT use this blueprint for the real school: for production remove ALLOW_DEMO_SEED and the
+# seed step, and create the first admin with scripts/bootstrap-admin.js (see docs/05-HANDOVER.md).
+databases:
+  - name: darwaza-test-db
+    plan: free
+    databaseName: darwaza
+    user: darwaza
+
+services:
+  - type: web
+    name: darwaza-test
+    runtime: node
+    plan: free
+    buildCommand: npm ci --prefix server --omit=dev && npm ci --include=dev --prefix client && npm run build --prefix client
+    # Migrations run first; the demo seed is skipped automatically if it already ran.
+    startCommand: cd server && node src/migrate.js && node scripts/seed-demo.js 120 && node src/server.js
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: darwaza-test-db
+          property: connectionString
+      - key: APP_ENCRYPTION_KEY
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MIGRATE_ON_START
+        value: "false"
+      - key: ALLOW_DEMO_SEED
+        value: yes-this-is-a-disposable-test-instance

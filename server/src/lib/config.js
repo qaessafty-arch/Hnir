@@ -24,7 +24,7 @@ module.exports = {
   encryptionKey: encKey,
   uploadDir: process.env.UPLOAD_DIR || require('path').resolve(__dirname, '../../data/uploads'),
   trustProxy: process.env.TRUST_PROXY || (isProd ? '1' : 'loopback'),
-  publicOrigin: process.env.PUBLIC_ORIGIN || null, // e.g. https://grades.darwaza.school
+  publicOrigin: process.env.PUBLIC_ORIGIN || process.env.RENDER_EXTERNAL_URL || null, // e.g. https://grades.darwaza.school (Render sets RENDER_EXTERNAL_URL)
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProd,
   logLevel: process.env.LOG_LEVEL || (env === 'test' ? 'silent' : 'info'),
   clientDist: process.env.CLIENT_DIST || require('path').resolve(__dirname, '../../../client/dist'),
