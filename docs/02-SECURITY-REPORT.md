@@ -78,6 +78,8 @@ Status meanings:
 
 ¹ Principals cannot create, modify, disable or reset super-admin or principal accounts.
 
+**Configurable account types:** the super administrator can change which sections each account type may use (`/api/roles`, permission `roles.manage`). Sections translate to permissions in `server/src/lib/sections.js`; `system.settings`, `roles.manage` and `backups.manage` are never grantable; the super_admin and student types are locked. Changing or suspending a type ends its users' sessions immediately; users whose types are all suspended cannot sign in (`account_type_suspended`). All changes are audited. Tested in `api.test.js` › *account types managed by the super administrator*. The matrix below is the **default** configuration.
+
 **Removed:** the Parent/Guardian role (and its tables) was removed at the school's request (migration `003_remove_parent_role.sql`). Former parent-only accounts are disabled and soft-deleted, kept for audit history.
 
 ## 2.4 Known limitations and recommendations (not done)

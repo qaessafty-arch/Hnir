@@ -73,8 +73,12 @@ router.post('/login', loginLimiter, ah(async (req, res) => {
     }
     return fail(ok ? 'disabled' : 'bad_password');
   }
-  await db.query('UPDATE users SET failed_login_count = 0, locked_until = NULL, last_login_at = now() WHERE id = $1', [u.id]);
   const { roles } = await loadUserAuthz(u.id);
+  if (roles.length === 0) {
+    await audit(req, 'auth.login_blocked_suspended_type', { entityType: 'user', entityId: u.id, actorId: u.id });
+    return res.status(403).json({ error: { code: 'account_type_suspended' } });
+  }
+  await db.query('UPDATE users SET failed_login_count = 0, locked_until = NULL, last_login_at = now() WHERE id = $1', [u.id]);
   const mfaRequired = roles.some((r) => sec.mfa_required_roles.includes(r));
   const mfaState = u.mfa_enabled ? 'pending_verify' : mfaRequired ? 'pending_enroll' : 'none';
   await destroySession(req, res, { clearCookie: false }); // revoke any previous session; new cookie replaces it
@@ -90,7 +94,8 @@ router.post('/logout', ah(async (req, res) => {
 }));
 
 router.get('/me', requireAuth, ah(async (req, res) => {
-  res.json({ user: publicUser(req), csrfToken: req.session.csrf, mfaState: req.session.mfaState });
+  const names = await db.query('SELECT key, name_en, name_ckb FROM roles WHERE key = ANY($1::text[])', [req.user.roles]);
+  res.json({ user: { ...publicUser(req), role_names: names.rows }, csrfToken: req.session.csrf, mfaState: req.session.mfaState });
 }));
 
 router.patch('/me', requireAuth, ah(async (req, res) => {

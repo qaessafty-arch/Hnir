@@ -275,7 +275,7 @@ The menu has 8 items. Start every day on **Home**.
 5. **Grade sheets:** all sheets by class, subject and status. Principals can also enter or correct grades here; corrections after publishing need a reason.
 6. **Staff:** *Teachers* (add, edit), *Who teaches what* (assign teacher → class → subject), *Accounts* (other staff accounts, password reset codes, MFA reset, disable).
 7. **School setup** (once a year): *Years & terms* (add the year and terms, set the current year, open or close grade entry), *Classes*, *Subjects* (max score, pass mark).
-8. **System:** *Settings* (grading policy, security policy, school name, backup status) and *Activity history* (who did what).
+8. **System:** *Account types* (super administrator: show or hide each section per account type — Hidden / View only / Full access; create, suspend or delete custom types), *Settings* (grading policy, security policy, school name, backup status) and *Activity history* (who did what).
 
 ## 14. Teacher guide
 

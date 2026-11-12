@@ -449,3 +449,75 @@ test.describe('analysis and approvals inbox', () => {
     assert.ok((await s.get(`/api/reports/student/${ids.students[0]}`)).body.assessments.some((x) => x.title === 'Bulk test'));
   });
 });
+
+test.describe('account types managed by the super administrator', () => {
+  let sa;
+  test.before(async () => {
+    await h.mkUser('super3', ['super_admin']);
+    await h.db.query(`UPDATE system_settings SET value = jsonb_set(value, '{mfa_required_roles}', '[]') WHERE key='security'`);
+    require('../src/lib/settings').invalidateSettings();
+    sa = await h.login('super3');
+  });
+
+  test('only the super administrator can manage account types', async () => {
+    const p = await h.login('principal1');
+    assert.strictEqual((await p.get('/api/roles')).status, 403);
+    const r = await sa.get('/api/roles');
+    assert.strictEqual(r.status, 200);
+    const principal = r.body.items.find((x) => x.key === 'principal');
+    assert.strictEqual(principal.sections.students, 'manage');
+    assert.ok(r.body.items.find((x) => x.key === 'super_admin').locked);
+    assert.ok(!r.body.items.some((x) => x.key === 'parent'));
+  });
+
+  test('custom type: sections control real API access (hidden / view / manage)', async () => {
+    const c = await sa.post('/api/roles').send({ name_en: 'Secretary', name_ckb: 'سکرتێر', sections: { students: 'view', results: 'view' } });
+    assert.strictEqual(c.status, 201);
+    const key = c.body.key;
+    // A principal cannot hand out custom types; the super admin can.
+    const p = await h.login('principal1');
+    assert.strictEqual((await p.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] })).body.error.code, 'cannot_assign_privileged_role');
+    const u = await sa.post('/api/users').send({ username: 'sec1', full_name: 'Sec', roles: [key] });
+    assert.strictEqual(u.status, 201);
+    await h.db.query("UPDATE users SET password_hash = (SELECT password_hash FROM users WHERE username='principal1'), must_change_password=false WHERE username='sec1'");
+    let s = await h.login('sec1');
+    assert.strictEqual((await s.get('/api/students')).status, 200);
+    assert.strictEqual((await s.post('/api/students').send({ full_name_ckb: 'x' })).status, 403);   // view only
+    assert.strictEqual((await s.get('/api/analytics')).status, 200);
+    assert.strictEqual((await s.get('/api/assessments')).status, 403);                               // section hidden
+    // Upgrade students to manage, hide results.
+    const upd = await sa.put(`/api/roles/${key}`).send({ name_en: 'Secretary', name_ckb: 'سکرتێر', sections: { students: 'manage', results: 'hidden' } });
+    assert.strictEqual(upd.status, 200);
+    assert.strictEqual((await s.agent.get('/api/students')).status, 401, 'changing a type signs its users out');
+    s = await h.login('sec1');
+    assert.strictEqual((await s.post('/api/students').send({ full_name_ckb: 'From secretary' })).status, 201);
+    assert.strictEqual((await s.get('/api/analytics')).status, 403);
+    // Suspend: signed out and cannot sign in.
+    await sa.post(`/api/roles/${key}/status`).send({ active: false });
+    assert.strictEqual((await s.agent.get('/api/students')).status, 401);
+    const blocked = await h.request().post('/api/auth/login').send({ username: 'sec1', password: h.PW });
+    assert.strictEqual(blocked.body.error.code, 'account_type_suspended');
+    await sa.post(`/api/roles/${key}/status`).send({ active: true });
+    await h.login('sec1');
+    // Delete is refused while users have it, allowed after.
+    assert.strictEqual((await sa.delete(`/api/roles/${key}`)).body.error.code, 'role_has_users');
+    const uid = (await h.db.query("SELECT id FROM users WHERE username='sec1'")).rows[0].id;
+    await sa.put(`/api/users/${uid}/roles`).send({ roles: ['auditor'] });
+    assert.strictEqual((await sa.delete(`/api/roles/${key}`)).status, 200);
+  });
+
+  test('locked and built-in types are protected; invalid levels rejected', async () => {
+    assert.strictEqual((await sa.put('/api/roles/super_admin').send({ name_en: 'x', name_ckb: 'x', sections: {} })).body.error.code, 'role_locked');
+    assert.strictEqual((await sa.put('/api/roles/student').send({ name_en: 'x', name_ckb: 'x', sections: { students: 'manage' } })).body.error.code, 'role_locked');
+    assert.strictEqual((await sa.post('/api/roles/super_admin/status').send({ active: false })).body.error.code, 'role_locked');
+    assert.strictEqual((await sa.delete('/api/roles/teacher')).body.error.code, 'cannot_delete_builtin_role');
+    assert.strictEqual((await sa.post('/api/roles').send({ name_en: 'X', name_ckb: 'X', sections: { approvals: 'view' } })).body.error.code, 'invalid_level');
+    // Built-in types can be adjusted, e.g. registrar loses Results.
+    const reg = (await sa.get('/api/roles')).body.items.find((x) => x.key === 'registrar');
+    const r = await sa.put('/api/roles/registrar').send({ name_en: reg.name_en, name_ckb: reg.name_ckb, sections: { ...reg.sections, home: 'hidden' } });
+    assert.strictEqual(r.status, 200);
+    const rs = await h.login('registrar1');
+    assert.strictEqual((await rs.get('/api/dashboard')).status, 403);
+    await sa.put('/api/roles/registrar').send({ name_en: reg.name_en, name_ckb: reg.name_ckb, sections: reg.sections });
+  });
+});

@@ -13,7 +13,13 @@ const router = express.Router();
 router.use(requirePerm('users.manage', 'roles.manage'));
 
 const PRIVILEGED_ASSIGN = ['super_admin', 'principal'];
-const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'student', 'auditor'];
+
+/** Every requested role must exist; only super admins may assign built-in admin roles or custom types. */
+async function assertRolesExist(keys) {
+  const r = await db.query('SELECT key FROM roles WHERE key = ANY($1::text[])', [keys]);
+  if (r.rowCount !== new Set(keys).size) throw badRequest('unknown_role');
+}
+const needsSuperAdmin = (key) => PRIVILEGED_ASSIGN.includes(key) || key.startsWith('custom_');
 
 async function rolesOf(userId) {
   const r = await db.query('SELECT r.key FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1', [userId]);
@@ -23,19 +29,19 @@ async function rolesOf(userId) {
 async function assertCanManage(req, targetUserId, newRoles = []) {
   if (has(req, 'roles.manage')) return;
   const current = await rolesOf(targetUserId);
-  if ([...current, ...newRoles].some((r) => PRIVILEGED_ASSIGN.includes(r))) throw forbidden('cannot_manage_privileged_account');
+  if ([...current, ...newRoles].some(needsSuperAdmin)) throw forbidden('cannot_manage_privileged_account');
 }
 
 router.get('/roles', ah(async (_req, res) => {
   const { rows } = await db.query(
-    `SELECT r.key, r.name_en, r.name_ckb, r.is_privileged, coalesce(array_agg(p.key ORDER BY p.key) FILTER (WHERE p.key IS NOT NULL), '{}') AS permissions
+    `SELECT r.key, r.name_en, r.name_ckb, r.is_privileged, r.is_system, r.is_active, coalesce(array_agg(p.key ORDER BY p.key) FILTER (WHERE p.key IS NOT NULL), '{}') AS permissions
        FROM roles r LEFT JOIN role_permissions rp ON rp.role_id = r.id LEFT JOIN permissions p ON p.id = rp.permission_id
       GROUP BY r.id ORDER BY r.id`);
   res.json({ items: rows });
 }));
 
 router.get('/', ah(async (req, res) => {
-  const q = parse(page.extend({ q: z.string().trim().max(100).optional(), role: z.enum(ROLE_KEYS).optional(),
+  const q = parse(page.extend({ q: z.string().trim().max(100).optional(), role: z.string().regex(/^[a-z0-9_]{2,40}$/).optional(),
     includeStudents: z.enum(['0', '1']).default('0') }), req.query);
   const params = [q.q ? `%${q.q.toLowerCase().replace(/[\\%_]/g, (m) => '\\' + m)}%` : null, q.role ?? null, q.includeStudents === '1'];
   const where = `WHERE u.deleted_at IS NULL
@@ -55,11 +61,13 @@ const createSchema = z.object({
   username: z.string().trim().min(3).max(50).regex(/^[A-Za-z0-9._-]+$/),
   full_name: text(120), email: z.string().trim().email().max(200).optional().nullable().or(z.literal('').transform(() => null)),
   phone: optText(30),
-  roles: z.array(z.enum(ROLE_KEYS.filter((r) => r !== 'student'))).min(1).max(4),
+  roles: z.array(z.string().regex(/^[a-z0-9_]{2,40}$/)).min(1).max(4),
 });
 router.post('/', ah(async (req, res) => {
   const b = parse(createSchema, req.body);
-  if (!has(req, 'roles.manage') && b.roles.some((r) => PRIVILEGED_ASSIGN.includes(r))) throw forbidden('cannot_assign_privileged_role');
+  if (b.roles.includes('student')) throw badRequest('student_role_is_managed_by_student_records');
+  await assertRolesExist(b.roles);
+  if (!has(req, 'roles.manage') && b.roles.some(needsSuperAdmin)) throw forbidden('cannot_assign_privileged_role');
   const out = await db.tx(async (c) => {
     const acct = await createAccount(c, { username: b.username, fullName: b.full_name, email: b.email, roles: b.roles }).catch(pgConflict);
     if (b.roles.includes('teacher')) {
@@ -84,7 +92,8 @@ router.put('/:id', ah(async (req, res) => {
 
 router.put('/:id/roles', ah(async (req, res) => {
   const uid = parse(id, req.params.id);
-  const b = parse(z.object({ roles: z.array(z.enum(ROLE_KEYS)).min(1).max(4) }), req.body);
+  const b = parse(z.object({ roles: z.array(z.string().regex(/^[a-z0-9_]{2,40}$/)).min(1).max(4) }), req.body);
+  await assertRolesExist(b.roles);
   await assertCanManage(req, uid, b.roles);
   if (uid === req.user.id && !b.roles.includes('super_admin') && req.user.roles.includes('super_admin')) throw badRequest('cannot_remove_own_super_admin');
   await db.tx(async (c) => {

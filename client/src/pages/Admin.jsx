@@ -6,6 +6,7 @@ import { api, normalizeDigits, ltr } from '../lib/api';
 import { useApi, useDebounced, useYears } from '../lib/hooks';
 import { Code, Empty, ErrorState, Field, Loading, Modal, PageHead, Pagination, SkeletonRows, StatusBadge, useConfirm, useToast } from '../components/ui';
 import { CredentialsModal, sectionLabel } from './Students';
+import { roleLabel } from './AccountTypes';
 
 /** Generic modal form driven by a field list. */
 function FormModal({ title, fields, initial, onSubmit, onClose }) {
@@ -88,9 +89,8 @@ export function TeachersPage() {
 }
 
 // ---------------- Users ----------------
-const ROLE_KEYS = ['super_admin', 'principal', 'registrar', 'teacher', 'auditor'];
 export function UsersPage() {
-  const { t, fmtDateTime, errorText } = useI18n();
+  const { t, fmtDateTime, errorText, pick } = useI18n();
   const { can, user: me } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -103,7 +103,10 @@ export function UsersPage() {
   const [rolesFor, setRolesFor] = useState(null);
   const [creds, setCreds] = useState(null);
   const [token, setToken] = useState(null);
-  const assignable = ROLE_KEYS.filter((r) => can('roles.manage') || !['super_admin', 'principal'].includes(r));
+  const rolesList = useApi('/users/roles');
+  const allTypes = (rolesList.data?.items || []).filter((r) => r.key !== 'student');
+  const nameOf = (key) => { const r = (rolesList.data?.items || []).find((x) => x.key === key); return r ? roleLabel(t, pick, r) : key; };
+  const assignable = allTypes.filter((r) => can('roles.manage') || (!['super_admin', 'principal'].includes(r.key) && !r.key.startsWith('custom_'))).map((r) => r.key);
   const act = async (fn, msg) => { try { await fn(); toast(msg || t('saved')); reload(); } catch (ex) { toast(errorText(ex), 'bad'); } };
   return (
     <>
@@ -111,7 +114,7 @@ export function UsersPage() {
       <div className="card">
         <div className="filters">
           <Field label={t('search')} className="grow">{(p) => <input {...p} className="input" type="search" value={q} onChange={(e) => setQ(e.target.value)} />}</Field>
-          <Field label={t('roles')}>{(p) => <select {...p} className="select" value={f.role} onChange={(e) => setF({ ...f, role: e.target.value, page: 1 })}><option value="">{t('all')}</option>{[...ROLE_KEYS, 'student'].map((r) => <option key={r} value={r}>{t(`role_${r}`)}</option>)}</select>}</Field>
+          <Field label={t('roles')}>{(p) => <select {...p} className="select" value={f.role} onChange={(e) => setF({ ...f, role: e.target.value, page: 1 })}><option value="">{t('all')}</option>{(rolesList.data?.items || []).map((r) => <option key={r.key} value={r.key}>{roleLabel(t, pick, r)}</option>)}</select>}</Field>
           <label className="checkbox" style={{ paddingBlockEnd: 8 }}><input type="checkbox" checked={f.includeStudents === '1'} onChange={(e) => setF({ ...f, includeStudents: e.target.checked ? '1' : '0', page: 1 })} />{t('includeStudents')}</label>
         </div>
         {error ? <ErrorState error={error} onRetry={reload} /> : (
@@ -121,7 +124,7 @@ export function UsersPage() {
               {data.items.map((u) => (
                 <tr key={u.id}>
                   <td><strong>{u.full_name}</strong>{u.email && <div className="small muted"><bdi dir="ltr">{u.email}</bdi></div>}</td><td><Code>{u.username}</Code></td>
-                  <td><div className="row" style={{ gap: 4 }}>{(u.roles || []).map((r) => <span key={r} className="badge badge-navy">{t(`role_${r}`)}</span>)}</div></td>
+                  <td><div className="row" style={{ gap: 4 }}>{(u.roles || []).map((r) => <span key={r} className="badge badge-navy">{nameOf(r)}</span>)}</div></td>
                   <td>{u.mfa_enabled ? <span className="badge badge-ok">{t('yes')}</span> : <span className="badge badge-neutral">{t('no')}</span>}</td>
                   <td className="small">{u.last_login_at ? fmtDateTime(u.last_login_at) : t('never')}{u.locked_until && new Date(u.locked_until) > new Date() && <span className="badge badge-bad"> {t('locked')}</span>}</td>
                   <td>{u.status === 'active' ? <span className="badge badge-ok">{t('st_active')}</span> : <span className="badge badge-bad">{t('disable')}</span>}</td>
@@ -144,14 +147,14 @@ export function UsersPage() {
       {edit && <FormModal title={edit.id ? t('edit') : t('addUser')} initial={edit} onClose={() => setEdit(null)}
         fields={[...(edit.id ? [] : [{ name: 'username', label: t('username'), required: true, ltr: true, max: 50 }]), { name: 'full_name', label: t('name'), required: true, max: 120 },
           { name: 'email', label: t('email'), type: 'email', ltr: true }, ...(edit.id ? [] : [{ name: 'phone', label: t('phone'), type: 'tel', ltr: true, max: 30 },
-          { name: 'roles', label: t('roles'), type: 'multi', options: assignable.map((r) => ({ value: r, label: t(`role_${r}`) })) }])]}
+          { name: 'roles', label: t('roles'), type: 'multi', options: assignable.map((r) => ({ value: r, label: nameOf(r) })) }])]}
         onSubmit={async (v) => {
           if (edit.id) { await api(`/users/${edit.id}`, { method: 'PUT', body: { full_name: v.full_name, email: v.email || null } }); toast(t('saved')); }
           else { setCreds(await api('/users', { method: 'POST', body: { username: v.username, full_name: v.full_name, email: v.email || null, phone: v.phone || null, roles: v.roles } })); }
           setEdit(null); reload();
         }} />}
       {rolesFor && <FormModal title={`${t('roles')} — ${rolesFor.full_name}`} initial={{ roles: rolesFor.roles || [] }} onClose={() => setRolesFor(null)}
-        fields={[{ name: 'roles', label: t('roles'), type: 'multi', options: assignable.map((r) => ({ value: r, label: t(`role_${r}`) })) }]}
+        fields={[{ name: 'roles', label: t('roles'), type: 'multi', options: assignable.map((r) => ({ value: r, label: nameOf(r) })) }]}
         onSubmit={async (v) => { await api(`/users/${rolesFor.id}/roles`, { method: 'PUT', body: { roles: v.roles } }); toast(t('saved')); setRolesFor(null); reload(); }} />}
       {creds && <CredentialsModal creds={creds} onClose={() => setCreds(null)} />}
       {token && <Modal size="narrow" title={t('issueReset')} onClose={() => setToken(null)} footer={<button type="button" className="btn btn-primary" onClick={() => setToken(null)}>{t('close')}</button>}>

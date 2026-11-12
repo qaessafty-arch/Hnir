@@ -98,22 +98,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
   min-block-size: 60px;
 }
 .topbar .spacer { flex: 1; }
-.btn.menu-btn { display: none; }
 .content { padding: 24px; max-inline-size: 1400px; inline-size: 100%; margin-inline: auto; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-block-end: 20px; flex-wrap: wrap; }
 .page-head p { color: var(--ink-3); margin-block-start: 4px; }
 .page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-@media (max-width: 960px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  /* Off-canvas drawer: hidden (not translated) when closed so it never creates page overflow. */
-  .sidebar { display: none; position: fixed; inset-inline-start: 0; inset-block: 0; inline-size: min(280px, 85vw); block-size: 100dvh; z-index: 60; }
-  .sidebar.open { display: flex; box-shadow: var(--shadow-lg); }
-  .scrim { position: fixed; inset: 0; background: rgb(15 23 42 / 45%); z-index: 50; }
-  .btn.menu-btn { display: inline-flex; }
-  .content { padding: 16px; }
-  .topbar { padding: 8px 16px; }
-}
+/* (responsive layout: see 'Device layouts' at the end of this file) */
 
 /* ---------- Surfaces ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
@@ -357,3 +347,139 @@ tr.row-conflict { background: var(--warn-bg); }
 /* Grid children must be allowed to shrink below their content width (prevents charts overflowing on phones). */
 .grid > * { min-inline-size: 0; }
 .hbar-row > * { min-inline-size: 0; }
+
+/* ---------- Account types ---------- */
+.types-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.type-card.suspended { opacity: 0.7; border-style: dashed; }
+.type-card h2 { display: flex; align-items: center; gap: 6px; }
+.type-sections { list-style: none; margin: 0; padding: 8px 18px 14px; }
+.type-sections li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.88rem; border-block-end: 1px dashed var(--line); }
+.type-sections li:last-child { border-block-end: 0; }
+.type-sections li.off span:first-child { color: var(--ink-3); }
+.section-picker { list-style: none; margin: 0; padding: 0; }
+.section-picker li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-block-end: 1px solid var(--line); flex-wrap: wrap; }
+.section-picker li > div:first-child { display: flex; flex-direction: column; flex: 1 1 240px; }
+.segmented { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
+.segmented button { border: 0; background: #fff; padding: 7px 12px; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--ink-2); cursor: pointer; min-block-size: 36px; }
+.segmented button + button { border-inline-start: 1px solid var(--line-2); }
+.segmented button.on.hidden { background: #e2e8f0; color: var(--ink); }
+.segmented button.on.view { background: var(--info-bg); color: var(--info); }
+.segmented button.on.manage { background: var(--navy-800); color: #fff; }
+
+
+/* =====================================================================
+   Device layouts
+   Phone   ≤ 640px : app-style — bottom navigation, compact header, tables become cards, bottom-sheet dialogs
+   Tablet  641–1100: slim icon rail, single-column charts in portrait
+   Laptop  1101–1599: full sidebar (default)
+   Large   ≥ 1600px : wider sidebar and content
+   ===================================================================== */
+.bottom-nav, .topbar-brand { display: none; }
+.btn.menu-btn { display: none; }
+
+/* ---------- Tablet: icon rail ---------- */
+@media (min-width: 641px) and (max-width: 1100px) {
+  :root { --sidebar: 88px; }
+  .sidebar-brand { justify-content: center; padding: 14px 8px; }
+  .sidebar-brand > div, .nav-section, .sidebar-foot { display: none; }
+  .nav { padding: 8px 6px; }
+  .nav a { flex-direction: column; gap: 4px; padding: 10px 4px; text-align: center; font-size: 0.7rem; line-height: 1.2; }
+  .nav a .nav-text { display: block; max-inline-size: 76px; overflow: hidden; text-overflow: ellipsis; }
+  .nav a .badge { position: absolute; margin: 0 !important; transform: translate(14px, -6px); }
+  .nav a { position: relative; }
+  .content { padding: 20px; }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .who { display: none; }
+}
+@media (min-width: 641px) and (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ---------- Large screens ---------- */
+@media (min-width: 1600px) {
+  :root { --sidebar: 272px; }
+  .content { max-inline-size: 1640px; padding: 32px 40px; }
+  body { font-size: 15px; }
+}
+
+/* ---------- Phone: app layout ---------- */
+@media (max-width: 640px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; position: fixed; inset-inline-start: 0; inset-block: 0; inline-size: min(300px, 86vw); block-size: 100dvh; z-index: 70; }
+  .sidebar.open { display: flex; box-shadow: var(--shadow-lg); }
+  .scrim { position: fixed; inset: 0; background: rgb(15 23 42 / 45%); z-index: 65; }
+  .topbar { padding-inline: 12px; min-block-size: 54px; gap: 6px; }
+  .topbar-brand { display: flex; align-items: center; gap: 8px; min-inline-size: 0; }
+  .topbar-brand strong { font-size: 0.86rem; color: var(--navy-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-inline-size: 40vw; }
+  .topbar .spacer { flex: 1; }
+  .topbar .btn-secondary.btn-sm { padding: 0 8px; }
+  .content { padding: 14px 12px calc(84px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 1.25rem; }
+  .page-head { margin-block-end: 14px; }
+  .page-actions { inline-size: 100%; }
+  .page-actions > .btn, .page-actions > a.btn { flex: 1 1 auto; }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 60;
+    background: #fff; border-block-start: 1px solid var(--line);
+    padding-block-end: env(safe-area-inset-bottom); box-shadow: 0 -4px 16px rgb(15 23 42 / 6%);
+  }
+  .bottom-nav a, .bottom-nav button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-block-size: 62px; padding: 6px 2px; border: 0; background: none; color: var(--ink-3);
+    font: inherit; font-size: 0.68rem; font-weight: 600; text-decoration: none; cursor: pointer;
+  }
+  .bottom-nav a.active { color: var(--navy-800); }
+  .bottom-nav a.active .bn-icon { background: var(--gold-100); color: var(--gold-600); }
+  .bn-icon { position: relative; display: grid; place-items: center; inline-size: 48px; block-size: 30px; border-radius: 999px; }
+  .bn-label { max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bn-dot { position: absolute; inset-block-start: -4px; inset-inline-end: 2px; background: var(--bad); color: #fff; border-radius: 999px; font-size: 0.62rem; padding: 0 5px; line-height: 16px; }
+
+  /* Tables become cards: each cell shows its column heading as a label */
+  .table-wrap { overflow: visible; }
+  table.table:not(.no-stack), table.table:not(.no-stack) > tbody, table.table:not(.no-stack) > tbody > tr, table.table:not(.no-stack) > tbody > tr > td { display: block; inline-size: 100%; }
+  table.table:not(.no-stack) > thead { display: none; }
+  table.table:not(.no-stack) > tbody > tr { inline-size: auto; margin: 10px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+  table.table:not(.no-stack) > tbody > tr:hover { background: #fff; }
+  table.table:not(.no-stack) > tbody > tr.row-fail { background: var(--bad-bg); }
+  table.table:not(.no-stack) > tbody > tr.row-conflict { background: var(--warn-bg); }
+  table.table:not(.no-stack) > tbody > tr > td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 12px; border: 0; text-align: end; }
+  table.table:not(.no-stack) > tbody > tr > td::before { content: attr(data-label); flex-shrink: 0; max-inline-size: 45%; font-size: 0.76rem; font-weight: 600; color: var(--ink-3); text-align: start; }
+  table.table:not(.no-stack) > tbody > tr > td[data-label='']::before { display: none; }
+  table.table:not(.no-stack) > tbody > tr > td[data-label=''] { justify-content: flex-start; }
+  table.table:not(.no-stack) > tbody > tr > td:first-child { border-block-end: 1px solid var(--line); margin-block-end: 2px; }
+  table.table:not(.no-stack) > tbody > tr > td[colspan] { display: block; text-align: center; }
+  table.table .actions { justify-content: flex-end; flex-wrap: wrap; }
+  .cell-person { min-inline-size: 0; }
+  .score-input { inline-size: 110px; min-block-size: 44px; font-size: 1.1rem; }
+  .card-head { padding: 12px 14px; }
+  .card-body { padding: 14px; }
+  .filters { padding: 12px; }
+  .filters .field { flex: 1 1 100%; min-inline-size: 0; }
+  .pagination { padding: 10px 12px; }
+
+  /* Dialogs become bottom sheets */
+  .modal-backdrop { place-items: end stretch; padding: 0; }
+  .modal, .modal.wide, .modal.narrow { inline-size: 100%; max-block-size: 92dvh; border-radius: 18px 18px 0 0; }
+  .modal-foot { padding-block-end: max(14px, env(safe-area-inset-bottom)); }
+  .modal-foot .btn { flex: 1 1 auto; }
+
+  .sticky-bar { position: sticky; inset-block-end: calc(64px + env(safe-area-inset-bottom)); border-radius: 12px; box-shadow: var(--shadow-lg); }
+  .sticky-bar > .row { inline-size: 100%; }
+  .sticky-bar .btn { flex: 1 1 auto; }
+  .toasts { inset-block-end: calc(76px + env(safe-area-inset-bottom)); inset-inline: 12px; }
+  .toast { min-inline-size: 0; }
+  .types-grid { grid-template-columns: 1fr; }
+  /* Headline numbers: compact 2×2 on phones */
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi { padding: 12px; }
+  .kpi .stat-icon { display: none; }
+  .kpi .stat-value { font-size: 1.35rem; }
+  .kpi-caption { font-size: 0.72rem; }
+  .page-head > .page-actions > a.btn-secondary[href='/results'] { display: none; }
+  .segmented { inline-size: 100%; }
+  .segmented button { flex: 1; }
+}
+@media print { .bottom-nav, .topbar-brand { display: none !important; } }

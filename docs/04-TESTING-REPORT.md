@@ -15,7 +15,7 @@ The application, database and load generator all ran **on the same machine**, so
 | Load (1,000 users) | `node ops/loadtest.js` | **Pass**: 0 errors / 0 5xx, see 4.4 |
 | Dependency audit | `npm audit` (server, client) | **0 vulnerabilities** |
 
-Total automated tests: **43 passed, 0 failed** (40 at first delivery, plus the TOTP RFC test-vector test for the Vercel fix, plus the analytics and bulk-approval tests; the parent-access test was replaced by a parent-role-removed test).
+Total automated tests: **46 passed, 0 failed** (40 at first delivery, plus the TOTP RFC test-vector test for the Vercel fix, plus the analytics and bulk-approval tests; the parent-access test was replaced by a parent-role-removed test).
 
 ## 4.2 Integration and security tests (`server/test/api.test.js`)
 
@@ -57,6 +57,7 @@ Each run builds a fresh schema via the migrations, then a fixture school: 1 year
 | | Invalid settings rejected; super_admin MFA requirement cannot be removed | Pass |
 | Analysis | Analytics overall % equals each at-risk student's report card; band counts add up; teacher sees only own classes; students get 403 | Pass |
 | | Attention list counts waiting sheets; inbox shows sender, class average, below-pass; teacher cannot bulk-approve; bulk approve + publish makes grades visible to the student; unknown sheet skipped, not failed | Pass |
+| Account types | Only super admin manages types; custom type: view-only blocks writes, hidden section blocks the API, upgrade takes effect after forced re-login; suspend signs out and blocks sign-in; delete refused while users exist; super_admin/student locked; invalid levels rejected | Pass |
 | Bulk import | Preview reports per-row errors; commit with errors imports nothing; valid commit creates accounts with one-time passwords | Pass |
 
 ## 4.3 Browser end-to-end (`e2e/smoke.js`)

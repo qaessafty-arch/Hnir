@@ -87,3 +87,16 @@ Feedback: admins found it hard to analyse results and to find their way around. 
 | Parent accounts | Removed (not needed by the school) |
 
 Charts follow the dataviz rules: single series with direct value labels, one hue, the reserved "critical" red only for below-pass bars together with a text label (never colour alone), a recessive track and a pass-mark tick. Bands with "≥" are isolated so RTL does not mirror them into "≤".
+
+## 3.8 Account types and per-device layouts (third iteration)
+
+**Account types (System → Account types, super administrator only).** Each account type has a card listing every section with its access level: *Hidden*, *View only* or *Full access*. The editor uses a three-way switch per section with a one-line explanation. You can create custom types (e.g. Secretary), suspend a type (its users are signed out and cannot sign in), or delete a custom type that has no users. The Super Administrator type is locked to full access, and the Student type is locked to "my grades", so neither can be broken. Sections map to server permissions in `server/src/lib/sections.js`, so a hidden section is blocked on the server, not just removed from the menu.
+
+**Distinct layouts per device (pure CSS media queries + one small React hook):**
+
+| Device | Layout |
+|---|---|
+| Phone ≤ 640 px | App-style: compact header with logo; **bottom navigation bar** with the user's 4 most important sections + "More" (opens the full menu); every table becomes a list of cards (each value labelled with its column heading, set automatically); headline numbers in a 2×2 grid; dialogs open as bottom sheets; large touch targets and score inputs for grade entry |
+| Tablet 641–1100 px | Slim **icon rail** (icon + short label) instead of the full sidebar; 2-column headline numbers; single-column charts in portrait |
+| Laptop 1101–1599 px | Full sidebar with section headings |
+| Large ≥ 1600 px | Wider sidebar and content, slightly larger text |

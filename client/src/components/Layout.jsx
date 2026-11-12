@@ -64,10 +64,33 @@ function Notifications() {
   );
 }
 
+/** On phones tables become cards; each cell needs its column heading as a label (set automatically). */
+function useTableCardLabels(ref) {
+  useEffect(() => {
+    const root = ref.current; if (!root) return undefined;
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      root.querySelectorAll('table.table').forEach((tbl) => {
+        const heads = [...tbl.querySelectorAll('thead th')].map((th) => th.innerText.trim());
+        tbl.querySelectorAll('tbody tr').forEach((tr) => {
+          [...tr.children].forEach((td, i) => { if (td.colSpan === 1 && td.dataset.label !== (heads[i] || '')) td.dataset.label = heads[i] || ''; });
+        });
+      });
+    };
+    const obs = new MutationObserver(() => { if (!frame) frame = requestAnimationFrame(apply); });
+    obs.observe(root, { childList: true, subtree: true });
+    apply();
+    return () => { obs.disconnect(); if (frame) cancelAnimationFrame(frame); };
+  }, [ref]);
+}
+
 export default function Layout() {
   const { t, lang, setLang, fmtNum } = useI18n();
   const { user, can, logout } = useAuth();
   const [pending, setPending] = useState(0);
+  const mainRef = useRef(null);
+  useTableCardLabels(mainRef);
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const nav = useNavigate();
@@ -83,6 +106,12 @@ export default function Layout() {
     api('/auth/me', { method: 'PATCH', body: { preferred_lang: next } }).catch(() => {});
   };
   const doLogout = async () => { await logout(); nav('/login'); };
+  const flat = NAV.flatMap((sec) => sec.items).filter((i) => !i.perms || can(...i.perms));
+  const PRIORITY = ['navHome', 'navMyGrades', 'navApprovals', 'navGradeSheets', 'navResults', 'navStudents', 'navStaff', 'navSetup', 'navSystem'];
+  const primary = flat.filter((i) => i.key !== 'navAccount')
+    .sort((a, b) => PRIORITY.indexOf(a.key) - PRIORITY.indexOf(b.key))
+    .filter((i) => !(can('grades.approve') && i.key === 'navGradeSheets')) // admins: Approvals/Results/Students first
+    .slice(0, 4);
   return (
     <div className="app">
       <a href="#main" className="skip-link">{t('skip')}</a>
@@ -100,7 +129,7 @@ export default function Layout() {
               <div key={sec.section}>
                 <div className="nav-section">{t(sec.section)}</div>
                 {items.map((i) => (
-                  <NavLink key={i.key} to={i.to} end={i.end}><i.icon size={18} aria-hidden="true" />{t(i.key)}
+                  <NavLink key={i.key} to={i.to} end={i.end} title={t(i.key)}><i.icon size={18} aria-hidden="true" /><span className="nav-text">{t(i.key)}</span>
                     {i.badge === 'approvals' && pending > 0 && <span className="badge badge-warn" style={{ marginInlineStart: 'auto' }}>{fmtNum(pending)}</span>}</NavLink>
                 ))}
               </div>
@@ -111,7 +140,7 @@ export default function Layout() {
       </aside>
       <div className="main">
         <header className="topbar">
-          <button type="button" className="btn btn-ghost btn-icon menu-btn" onClick={() => setOpen(true)} aria-label={t('menu')}><Menu size={20} /></button>
+          <span className="topbar-brand"><Logo size={34} /><strong>{t('school')}</strong></span>
           <div className="spacer" />
           <InstallButton compact />
           <Notifications />
@@ -120,15 +149,26 @@ export default function Layout() {
             <span className="avatar" aria-hidden="true"><UserRound size={18} /></span>
             <div className="small who" style={{ lineHeight: 1.25 }}>
               <strong style={{ display: 'block' }}>{user.full_name}</strong>
-              <span className="muted">{user.roles.map((r) => t(`role_${r}`)).join(' · ')}</span>
+              <span className="muted">{(user.role_names || []).map((r) => (r.key.startsWith('custom_') ? (lang === 'ckb' ? r.name_ckb : r.name_en) : t(`role_${r.key}`))).join(' · ')}</span>
             </div>
           </div>
           <button type="button" className="btn btn-ghost btn-icon" onClick={doLogout} aria-label={t('signOut')} title={t('signOut')}><LogOut size={18} className="flip-rtl" /></button>
         </header>
-        <main id="main" className="content" tabIndex={-1}>
+        <main id="main" className="content" tabIndex={-1} ref={mainRef}>
           <Outlet />
         </main>
       </div>
+      <nav className="bottom-nav" aria-label={t('menu')}>
+        {primary.map((i) => (
+          <NavLink key={i.key} to={i.to} end={i.end}>
+            <span className="bn-icon"><i.icon size={22} aria-hidden="true" />{i.badge === 'approvals' && pending > 0 && <span className="bn-dot">{fmtNum(pending)}</span>}</span>
+            <span className="bn-label">{t(i.key)}</span>
+          </NavLink>
+        ))}
+        <button type="button" onClick={() => setOpen(true)} aria-expanded={open}>
+          <span className="bn-icon"><Menu size={22} aria-hidden="true" /></span><span className="bn-label">{t('more')}</span>
+        </button>
+      </nav>
     </div>
   );
 }

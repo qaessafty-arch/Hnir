@@ -2,6 +2,7 @@ import { useI18n } from '../i18n';
 import Hub from '../components/Hub';
 import { AssignmentsPage, SectionsPage, SubjectsPage, TeachersPage, UsersPage, YearsPage } from './Admin';
 import { AuditPage, SettingsPage } from './System';
+import AccountTypesPage from './AccountTypes';
 
 export function StaffHub() {
   const { t } = useI18n();
@@ -24,6 +25,7 @@ export function SetupHub() {
 export function SystemHub() {
   const { t } = useI18n();
   return <Hub title={t('systemTitle')} help={t('systemHelp')} tabs={[
+    { key: 'types', label: t('tabTypes'), perms: ['roles.manage'], render: () => <AccountTypesPage /> },
     { key: 'settings', label: t('tabSettings'), perms: ['system.settings'], render: () => <SettingsPage /> },
     { key: 'audit', label: t('tabAudit'), perms: ['audit.read'], render: () => <AuditPage /> },
   ]} />;

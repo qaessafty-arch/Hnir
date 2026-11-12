@@ -17,7 +17,7 @@ async function loadUserAuthz(userId) {
        FROM user_roles ur JOIN roles r ON r.id = ur.role_id
        LEFT JOIN role_permissions rp ON rp.role_id = r.id
        LEFT JOIN permissions p ON p.id = rp.permission_id
-      WHERE ur.user_id = $1`, [userId]);
+      WHERE ur.user_id = $1 AND r.is_active`, [userId]);
   const roles = [...new Set(rows.map((r) => r.role))];
   const permissions = new Set(rows.map((r) => r.perm).filter(Boolean));
   return { roles, permissions };
@@ -60,6 +60,7 @@ async function loadSession(req, _res, next) {
     if (!rows.length) return next();
     const row = rows[0];
     const authz = await loadUserAuthz(row.id);
+    if (authz.roles.length === 0) return next(); // every account type of this user is suspended
     req.session = { id: row.sid, csrf: row.csrf_token, mfaState: row.mfa_state };
     req.user = {
       id: row.id, username: row.username, full_name: row.full_name, email: row.email,

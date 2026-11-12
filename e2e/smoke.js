@@ -83,6 +83,9 @@ async function shot(page, name, path) {
     const { ctx, page } = await session(browser, 'demo.admin', { lang: 'en' });
     await shot(page, '28-system-settings-en', '/system');
     await shot(page, '27-account-en', '/account');
+    await shot(page, '29-system-account-types-en', '/system?tab=types');
+    await page.click('.type-card .btn-secondary'); await page.waitForSelector('.section-picker');
+    await page.screenshot({ path: `${OUT}/30-account-type-editor-en.png` });
     await ctx.close();
   }
   {
@@ -116,12 +119,12 @@ async function shot(page, name, path) {
     await page.pdf({ path: `${OUT}/report-card-print.pdf`, format: 'A4', printBackground: true });
     await ctx.close();
   }
-  for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'], ['demo.principal', '/results', '55-mobile-results'], ['demo.principal', '/approvals', '56-mobile-approvals'],
+  for (const [u, path, name] of [['demo.principal', '/', '50-mobile-dashboard'], ['demo.principal', '/students', '51-mobile-students'], ['demo.principal', '/results', '55-mobile-results'], ['demo.principal', '/approvals', '56-mobile-approvals'], ['demo.teacher1', '/grades/sheet/1', '60-mobile-grade-entry'], ['demo.admin', '/system?tab=types', '61-mobile-account-types'],
     ['DPS-2026-0001', '/portal', '52-mobile-student'], ['demo.teacher1', '/grades', '53-mobile-grades']]) {
     const { ctx, page } = await session(browser, u, { lang: 'ckb', viewport: { width: 390, height: 844 } });
     await shot(page, name, path);
     if (name === '50-mobile-dashboard') {
-      await page.click('.menu-btn'); await page.waitForTimeout(300);
+      await page.click('.bottom-nav button'); await page.waitForTimeout(300);
       await page.screenshot({ path: `${OUT}/54-mobile-menu.png` });
     }
     await ctx.close();
@@ -129,6 +132,8 @@ async function shot(page, name, path) {
   {
     const { ctx, page } = await session(browser, 'demo.principal', { lang: 'en', viewport: { width: 820, height: 1180 } });
     await shot(page, '57-tablet-results', '/results');
+    await shot(page, '58-tablet-home', '/');
+    await shot(page, '59-tablet-students-ckb', '/students');
     await ctx.close();
   }
   await browser.close();
