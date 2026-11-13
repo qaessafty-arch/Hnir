@@ -7,3 +7,10 @@ backups/
 e2e-shots/
 legacy-credentials-*.csv
 *.log
+
+# Native app build outputs and signing keys (never commit keys)
+apps/android/build/
+apps/android/dist/
+apps/android/*.jks
+apps/windows/dist/
+apps/ios/*.xcodeproj/
